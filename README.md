@@ -47,6 +47,7 @@ npm install chess.js
 ```html
 <link rel="stylesheet" href="SimpleChessBoard.css">
 <div id="board" style="width:400px;height:400px"></div>
+
 <script type="module">
 import { SimpleChessBoard } from './SimpleChessBoard.js';
 
