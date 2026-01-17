@@ -24,8 +24,6 @@ SimpleChessBoard separates responsibilities so the code stays predictable and ea
 * **Layers / overlays:** the board uses separate layers for pieces, legal moves and annotations, allowing visual changes without touching piece state directly.
 * **History and navigation:** keeps a move history so the UI supports undo/redo and jump-to-start / jump-to-end navigation.
 
-This design makes SimpleChessBoard a UI layer that can be integrated over `chess.js` without forcing the rest of your app to adopt the same license.
-
 ---
 
 ## 2) API (what it provides and how to use it)
