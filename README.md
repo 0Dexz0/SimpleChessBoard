@@ -45,11 +45,6 @@ import { SimpleChessBoard } from './SimpleChessBoard.js';
 
 const board = new SimpleChessBoard({
   container: document.getElementById('board'),
-  position: 'default',
-  piecesPath: '/assets/pieces/',
-  handlers: {
-    onMoveEnd: (instance, move) => console.log('move', move)
-  }
 });
 </script>
 ```
@@ -158,7 +153,6 @@ These are the defaults used when no `interactivity`, `visual` or `style` object 
   "lastMove": { "from": { "color": "rgb(255, 255, 51)", "opacity": 0.5 }, "to": { "color": "rgb(255, 255, 51)", "opacity": 0.5 } }
 }
 ```
-
 ---
 
 In the future I may add getter/setter accessors for properties on the `style` object so you don't need to recreate the board to apply style changes. Since the board uses CSS variables for styling, changing a `--variable` to a new value would automatically update the visuals in real time. This is not a high-priority feature (it is uncommon to change a board's style in real time while a game is in progress), but it's something I might implement later.
