@@ -1,0 +1,125 @@
+.dragging-piece {
+    left: 0;
+    top: 0;
+    position: fixed;
+    will-change: transform;
+    touch-action: none;
+    pointer-events: none;
+}
+
+.simplechessboard {
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+
+.simplechessboard circle,
+.simplechessboard rect {
+    pointer-events: none;
+}
+
+.simplechessboard .promotion-options {
+    fill: white;
+    filter: drop-shadow(3px 3px 10px rgba(0, 0, 0, 0.65));
+    cursor: pointer;
+}
+
+.simplechessboard:focus {
+    outline: none;
+}
+
+.simplechessboard .lm-capture {
+    fill: none;
+    stroke: var(--legal-move-capture-color);
+    stroke-width: 0.1;
+    stroke-linecap: round;
+}
+
+.simplechessboard .lm-normal {
+    fill: var(--legal-move-empty-color);
+}
+
+.simplechessboard .selected-piece-square-own {
+    fill: var(--selected-piece-square-own-color);
+    opacity: var(--selected-piece-square-own-opacity);
+}
+
+.simplechessboard .selected-piece-square-enemy {
+    fill: var(--selected-piece-square-enemy-color);
+    opacity: var(--selected-piece-square-enemy-opacity);
+}
+
+.simplechessboard .last-move-from {
+    fill: var(--last-move-from-color);
+    opacity: var(--last-move-from-opacity);
+}
+
+.simplechessboard .last-move-to {
+    fill: var(--last-move-to-color);
+    opacity: var(--last-move-to-opacity);
+}
+
+.simplechessboard .algebraic-notation {
+    font-family: "Segoe UI", system-ui;
+    font-weight: 600;
+    font-size: 0.24px;
+    pointer-events: none;
+    --algebraic-color-1: var(--board-color-1);
+    --algebraic-color-2: var(--board-color-2);
+}
+
+.simplechessboard .numeral-notation {
+    dominant-baseline: hanging;
+}
+
+.simplechessboard .letter-notation {
+    text-anchor: end;
+    dominant-baseline: ideographic;
+}
+
+.simplechessboard.flip-board .numeral-notation text {
+    transform: translateY(var(--y));
+}
+
+.simplechessboard.flip-board .letter-notation text {
+    transform: translateX(var(--x));
+}
+
+.simplechessboard.flip-board .algebraic-notation {
+    --algebraic-color-1: var(--board-color-2);
+    --algebraic-color-2: var(--board-color-1);
+}
+
+.simplechessboard .pieces {
+    cursor: var(--piece-hover-cursor);
+}
+
+.simplechessboard .rects rect {
+    width: 1px;
+    height: 1px;
+}
+
+.simplechessboard .pieces image {
+    width: 1px;
+    height: 1px;
+}
+
+.simplechessboard.flip-board {
+    --orientation: b;
+    rotate: 180deg;
+}
+
+.simplechessboard.flip-board image {
+    rotate: 180deg;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.simplechessboard.flip-board .algebraic-notation {
+    rotate: 180deg;
+    transform-origin: center;
+}
