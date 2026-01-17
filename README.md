@@ -6,17 +6,17 @@ SimpleChessBoard is an SVG-based chessboard UI library for the web. It is design
 
 ---
 
+### Board with default styles
+
+![image alt](https://github.com/0Dexz0/SimpleChessBoard/blob/e888b08fc987a1ef4dd640c56660dae66a6ebc85/Default-Style-Example.png)
+
+---
+
 ## Table of contents
 
 1. [How it works internally (high-level)](#1-how-it-works-internally-high-level)
 2. [API (what it provides and how to use it)](#2-api-what-it-provides-and-how-to-use-it)
 3. [Default values: interactivity, visual and style](#3-default-values-interactivity-visual-and-style)
-
----
-
-### Board with default styles
-
-![image alt](https://github.com/0Dexz0/SimpleChessBoard/blob/e888b08fc987a1ef4dd640c56660dae66a6ebc85/Default-Style-Example.png)
 
 ---
 
