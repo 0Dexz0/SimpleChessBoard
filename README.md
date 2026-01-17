@@ -14,6 +14,12 @@ SimpleChessBoard is an SVG-based chessboard UI library for the web. It is design
 
 ---
 
+### Board with default styles
+
+![image alt](https://github.com/0Dexz0/SimpleChessBoard/blob/e888b08fc987a1ef4dd640c56660dae66a6ebc85/Default-Style-Example.png)
+
+---
+
 ## 1) How it works internally (high-level)
 
 SimpleChessBoard separates responsibilities so the code stays predictable and easy to reason about:
@@ -153,10 +159,6 @@ These are the defaults used when no `interactivity`, `visual` or `style` object 
   "lastMove": { "from": { "color": "rgb(255, 255, 51)", "opacity": 0.5 }, "to": { "color": "rgb(255, 255, 51)", "opacity": 0.5 } }
 }
 ```
-
-### Chess Board with DEFAULT_VISUAL and DEFAULT_STYLE
-
-![image alt](https://github.com/0Dexz0/SimpleChessBoard/blob/e888b08fc987a1ef4dd640c56660dae66a6ebc85/Default-Style-Example.png)
 ---
 
 In the future I may add getter/setter accessors for properties on the `style` object so you don't need to recreate the board to apply style changes. Since the board uses CSS variables for styling, changing a `--variable` to a new value would automatically update the visuals in real time. This is not a high-priority feature (it is uncommon to change a board's style in real time while a game is in progress), but it's something I might implement later.
