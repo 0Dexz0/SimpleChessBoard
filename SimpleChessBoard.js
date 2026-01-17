@@ -345,7 +345,7 @@ export class SimpleChessBoard {
             this.#clearAllRightClickMarks()
             this.#clearAllArrows()
 
-            // -------------------- Modo de promoción --------------------
+            // -------------------- Promotion mode --------------------
             if (this.#isPromotionActive()) {
                 this.#clearPromotionOptions()
 
@@ -358,7 +358,7 @@ export class SimpleChessBoard {
                 return
             }
 
-            // -------------------- Movimiento legal --------------------
+            // -------------------- Legal movement --------------------
             if (this.#isLegalMove(clickedSquare)) {
                 const from = this.#selectedSquare
                 const to = clickedSquare
@@ -373,7 +373,7 @@ export class SimpleChessBoard {
                 return
             }
 
-            // -------------------- Drag SOLO si está permitido --------------------
+            // -------------------- Drag ONLY if allowed --------------------
             const possiblePiece = this.chessLogic.get(clickedSquare)
             const isOwn = this.#isOwnPiece(possiblePiece)
 
@@ -869,7 +869,6 @@ export class SimpleChessBoard {
             this.#history = this.#history.slice(0, this.#currentMoveIndex + 1)
         }
 
-        // Movimiento nuevo, se agrega
         this.#history.push({
             from: move.from,
             to: move.to,
@@ -1188,4 +1187,5 @@ export class SimpleChessBoard {
             `<path id="${id}" data-type="${type}" d="${pathD}" ${style ? `style="${style}"` : ''}/>`
         )
     }
+
 }
