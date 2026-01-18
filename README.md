@@ -141,7 +141,7 @@ These are the defaults used when no `interactivity`, `visual` or `style` object 
 
 ```json
 {
-  "showLegalMoves": false,
+  "showLegalMoves": true,
   "highlightSelectedPieceSquareOwn": true,
   "highlightSelectedPieceSquareEnemy": true,
   "highlightLastMove": true,
