@@ -50,7 +50,7 @@ export const DEFAULT_INTERACTIVITY = {
 }
 
 export const DEFAULT_VISUAL = {
-    showLegalMoves: false,
+    showLegalMoves: true,
 
     highlightSelectedPieceSquareOwn: true,
     highlightSelectedPieceSquareEnemy: true,
@@ -1189,3 +1189,4 @@ export class SimpleChessBoard {
     }
 
 }
+
