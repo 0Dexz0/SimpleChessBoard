@@ -34,7 +34,7 @@ export const DEFAULT_INTERACTIVITY = {
 
     drag: true,
     dragOwnPieces: true,
-    dragEnemyPieces: false,
+    dragEnemyPieces: true,
 
     deselectOnEmptyDrop: true,
     deselectOnSelectedSquareDrop: false,
@@ -1189,4 +1189,5 @@ export class SimpleChessBoard {
     }
 
 }
+
 
