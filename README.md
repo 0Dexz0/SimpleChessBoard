@@ -125,7 +125,7 @@ These are the defaults used when no `interactivity`, `visual` or `style` object 
   "enabled": true,
   "drag": true,
   "dragOwnPieces": true,
-  "dragEnemyPieces": false,
+  "dragEnemyPieces": true,
   "deselectOnEmptyDrop": true,
   "deselectOnSelectedSquareDrop": false,
   "deselectOnEmptyClick": true,
