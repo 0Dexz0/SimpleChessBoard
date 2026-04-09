@@ -12,7 +12,7 @@ npm install @0dexz0/simple-chess-board
 
 ## Live Demo / Screenshot
 
-Try the live demo: [SimpleChessBoard Demo](https://0dexz0.github.io/simple-chess-board/)
+Try the live demo: [SimpleChessBoard Demo](https://0dexz0.github.io/SimpleChessBoard/)
 
 <img src="screenshots/board-live-demo.png" alt="drawing" width="1000"/>
 
@@ -45,6 +45,6 @@ See the full guide in [GUIDE.md](GUIDE.md).
 - Found a bug?
 - Have an idea or suggestion?
 
-Feel free to open an [issue](https://github.com/0dexz0/simple-chess-board/issues) or submit a pull request.
+Feel free to open an [issue](https://github.com/0Dexz0/SimpleChessBoard/issues) or submit a pull request.
 
 All contributions are welcome.
