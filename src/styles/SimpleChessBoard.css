@@ -1,0 +1,289 @@
+/* 
+ * @license MPL 2.0
+ * Copyright (c) 2026 0Dexz0
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. You can read the full license at:
+ * http://mozilla.org/MPL/2.0/.
+ * Project: https://github.com/0Dex0/SimpleChessBoard
+ */
+
+.simplechessboard {
+    -webkit-user-drag: none;
+    -khtml-user-drag: none;
+    -moz-user-drag: none;
+    -o-user-drag: none;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    overflow: visible;
+
+    &:focus {
+        outline: none;
+    }
+
+    :is(circle, rect, text) {
+        pointer-events: none;
+    }
+
+    rect {
+        width: 1px;
+        height: 1px;
+    }
+
+    &.flip-board {
+        :is(.hs-selected-piece, .legal-moves, .hs-last-move, .hs-check-king, .marks-arrows, .marks-squares) {
+            scale: -1;
+            transform-origin: center;
+        }
+
+        .algebraic-notation {
+            --algebraic-color1: var(--board-color2);
+            --algebraic-color2: var(--board-color1);
+
+            .numeral-notation text {
+                transform: translateY(var(--y));
+            }
+
+            .letter-notation text {
+                transform: translateX(var(--x));
+            }
+        }
+
+        .promotion-options {
+            opacity: 1;
+            scale: -1;
+
+            use {
+                scale: -1;
+                translate: 1px 4px;
+                y: var(--y);
+            }
+
+            rect {
+                animation: promo-bounce-in 0.2s ease;
+            }
+        }
+    }
+
+    &:not(flip-board) {
+        .promotion-options {
+            rect {
+                animation: promo-bounce-out 0.2s ease;
+            }
+        }
+    }
+
+    &:has(.dragging-piece) {
+        cursor: var(--dragPiece-cursor);
+    }
+
+    .algebraic-notation {
+        font-family: "Segoe UI", system-ui;
+        font-weight: 600;
+        font-size: 0.24px;
+        pointer-events: none;
+        --algebraic-color1: var(--board-color1);
+        --algebraic-color2: var(--board-color2);
+
+        .numeral-notation {
+            dominant-baseline: hanging;
+        }
+
+        .letter-notation {
+            text-anchor: end;
+            dominant-baseline: ideographic;
+        }
+    }
+
+    .lm-capture {
+        fill: none;
+        stroke-width: 0.1;
+        stroke-linecap: round;
+        stroke: var(--legalMove-capture-color);
+        opacity: var(--legalMove-capture-opacity);
+    }
+
+    .lm-empty {
+        fill: var(--legalMove-empty-color);
+        opacity: var(--legalMove-empty-opacity);
+    }
+
+    .hs-selected-piece {
+        fill: var(--highlightSquare-selectedPiece-color);
+        opacity: var(--highlightSquare-selectedPiece-opacity);
+    }
+
+    .hs-last-move {
+        rect:first-child {
+            fill: var(--highlightSquare-lastMove-from-color);
+            opacity: var(--highlightSquare-lastMove-from-opacity);
+        }
+
+        rect:last-child {
+            fill: var(--highlightSquare-lastMove-to-color);
+            opacity: var(--highlightSquare-lastMove-to-opacity);
+        }
+    }
+
+    .hs-check-king rect {
+        opacity: var(--highlightSquare-checkKing-opacity);
+        animation: hs-check-king-flash 1.23s linear forwards;
+    }
+
+    .marks-squares {
+        .normal {
+            fill: var(--marks-squares-normal-color);
+            opacity: var(--marks-squares-normal-opacity);
+        }
+
+        .shift {
+            fill: var(--marks-squares-shift-color);
+            opacity: var(--marks-squares-shift-opacity);
+        }
+
+        .ctrl {
+            fill: var(--marks-squares-ctrl-color);
+            opacity: var(--marks-squares-ctrl-opacity);
+        }
+
+        .alt {
+            fill: var(--marks-squares-alt-color);
+            opacity: var(--marks-squares-alt-opacity);
+        }
+    }
+
+    .marks-arrows {
+        .normal {
+            fill: var(--marks-arrows-normal-color);
+            opacity: var(--marks-arrows-normal-opacity);
+        }
+
+        .shift {
+            fill: var(--marks-arrows-shift-color);
+            opacity: var(--marks-arrows-shift-opacity);
+        }
+
+        .ctrl {
+            fill: var(--marks-arrows-ctrl-color);
+            opacity: var(--marks-arrows-ctrl-opacity);
+        }
+
+        .alt {
+            fill: var(--marks-arrows-alt-color);
+            opacity: var(--marks-arrows-alt-opacity);
+        }
+    }
+
+    .dragging-piece {
+        transition: none;
+        opacity: var(--dragPiece-clone-opacity);
+        transform: scale(var(--dragPiece-clone-scale));
+        transform-origin: center;
+        transform-box: border-box;
+        x: var(--dragPiece-clone-deltaPosition-x);
+        y: var(--dragPiece-clone-deltaPosition-y);
+    }
+
+    .dragged-piece {
+        opacity: var(--dragPiece-original-opacity);
+    }
+
+    .pieces {
+        cursor: var(--piece-cursor);
+
+        use:not(.dragged-piece) {
+            transition:
+                x var(--piece-animation-x-time) var(--piece-animation-x-type),
+                y var(--piece-animation-y-time) var(--piece-animation-y-type),
+                opacity var(--piece-animation-opacity-time) var(--piece-animation-opacity-type);
+        }
+    }
+
+    .promotion-options {
+        transform-origin: center;
+        animation: flip-promotion 5s ease forwards;
+
+        g {
+            display: none;
+        }
+
+        rect {
+            transform-box: border-box;
+            transform-origin: center;
+            width: 1px;
+            height: 4px;
+            fill: white;
+            stroke: #000000c9;
+            stroke-width: 0.002;
+            rx: 0.01;
+            ry: 0.01;
+        }
+
+        use {
+            transition: y 0.3s ease;
+        }
+    }
+
+    .drag-trails {
+        circle {
+            fill: var(--dragTrail-circle-color);
+            opacity: var(--dragTrail-circle-opacity);
+        }
+    }
+}
+
+@keyframes hs-check-king-flash {
+
+    0%,
+    20% {
+        fill: var(--highlightSquare-checkKing-color);
+    }
+
+    20.01%,
+    40% {
+        fill: transparent;
+    }
+
+    40.01%,
+    60% {
+        fill: var(--highlightSquare-checkKing-color);
+    }
+
+    60.01%,
+    80% {
+        fill: transparent;
+    }
+
+    80.01%,
+    100% {
+        fill: var(--highlightSquare-checkKing-color);
+    }
+}
+
+@keyframes promo-bounce-in {
+    0% {
+        transform: scaleY(1);
+    }
+
+    50% {
+        transform: scaleY(0.35);
+    }
+
+    100% {
+        transform: scaleY(1);
+    }
+}
+
+@keyframes promo-bounce-out {
+    0% {
+        transform: scaleY(1);
+    }
+
+    50% {
+        transform: scaleY(0.35);
+    }
+
+    100% {
+        transform: scaleY(1);
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "name": "simple-chess-board",
+    "version": "0.1.0",
+    "type": "module",
+    "main": "./src/core/SimpleChessBoard.js",
+    "exports": {
+        ".": "./src/core/SimpleChessBoard.js",
+        "./helpers": "./src/helpers/chess-helpers.js",
+        "./config": "./src/config/index.js",
+        "./themes": "./src/themes/index.js"
+    },
+    "files": [
+        "src"
+    ],
+    "scripts": {
+        "pack": "npm pack --pack-destination ./tgz"
+    },
+    "dependencies": {
+        "chess.js": "1.4.0"
+    }
+}

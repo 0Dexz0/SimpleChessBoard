@@ -1,0 +1,1 @@
+export { CHESSCOM_STYLE } from "./chesscom";
