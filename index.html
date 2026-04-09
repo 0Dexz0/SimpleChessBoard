@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>playground · auto play + interactividad · diseño fluido</title>
+    <style>
+      :root {
+        --bg: #2c1112;
+        --panel: #2a1d1c;
+        --card: #342524;
+        --card-2: #2b1f1e;
+        --line: rgba(255, 255, 255, 0.08);
+        --line-2: rgba(255, 255, 255, 0.05);
+        --text: #f6efe9;
+        --muted: #bea9a1;
+        --accent: #f4cf6d;
+        --shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+        --radius: 24px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        margin: 0;
+      }
+
+      /* Escritorio: body con altura fija de viewport y overflow hidden (sin scroll general) */
+      body {
+        height: 100%;
+        overflow: hidden;
+        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at top, rgba(255, 255, 255, 0.05), transparent 24%),
+          linear-gradient(180deg, #3c1416 0%, var(--bg) 18%, #1c1010 100%);
+        color: var(--text);
+      }
+
+      #app {
+        width: 100%;
+        height: 100dvh;
+        overflow: hidden;
+        display: grid;
+        grid-template-areas: "left board right";
+        grid-template-columns: minmax(280px, 330px) minmax(320px, 1fr) minmax(300px, 360px);
+        gap: 16px;
+        padding: 16px;
+      }
+
+      .panel {
+        min-height: 0;
+        height: 100%;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .panel-scroll {
+        height: 100%;
+        overflow: auto;
+        padding: 14px;
+      }
+
+      .panel h2 {
+        margin: 0 0 12px;
+        text-align: center;
+        font-size: 1.2rem;
+        line-height: 1;
+        font-weight: 800;
+        color: var(--text);
+      }
+
+      .card {
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.06));
+        border: 1px solid var(--line-2);
+        border-radius: 18px;
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .section-title {
+        font-size: 0.86rem;
+        font-weight: 800;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .mini-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 16px;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+
+      .mini-title {
+        margin-bottom: 10px;
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: #f0d48b;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      [data-disabled="true"] {
+        opacity: 0.42;
+        filter: saturate(0.35);
+        pointer-events: none;
+      }
+
+      .field {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+        margin: 8px 0;
+      }
+
+      .field label {
+        font-size: 0.88rem;
+        color: var(--text);
+      }
+
+      .field .value {
+        font-size: 0.78rem;
+        color: var(--muted);
+        min-width: 2.4rem;
+        text-align: right;
+      }
+
+      .field input[type="text"],
+      .field input[type="number"],
+      .field select {
+        width: 100%;
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: #151010;
+        color: var(--text);
+        border-radius: 12px;
+        outline: none;
+        padding: 10px 12px;
+        font: inherit;
+      }
+
+      .field input[type="range"] {
+        width: 100%;
+        accent-color: #f4cf6d;
+      }
+
+      .color-input {
+        background-color: transparent;
+        width: 120px !important;
+        height: 38px;
+        padding: 0 !important;
+        border: 0px;
+        overflow: hidden;
+        cursor: pointer;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        user-select: none;
+      }
+
+      .switch input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .switch-track {
+        width: 42px;
+        height: 24px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.16);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        position: relative;
+        flex: 0 0 auto;
+        transition: 0.2s ease;
+      }
+
+      .switch-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #f5f1ea;
+        position: absolute;
+        top: 50%;
+        left: 3px;
+        transform: translateY(-50%);
+        transition: 0.2s ease;
+      }
+
+      .switch input:checked + .switch-track {
+        background: #5db14d;
+      }
+
+      .switch input:checked + .switch-track .switch-thumb {
+        transform: translate(18px, -50%);
+      }
+
+      /* Botones auto play */
+      .button-group {
+        display: flex;
+        gap: 10px;
+        margin: 8px 0;
+      }
+
+      .auto-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--line);
+        border-radius: 40px;
+        padding: 8px 16px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--text);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex: 1;
+        text-align: center;
+      }
+
+      .auto-btn:hover {
+        background: rgba(244, 207, 109, 0.2);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .auto-btn:active {
+        transform: scale(0.97);
+      }
+
+      .speed-input {
+        width: 100%;
+        background: #151010;
+        border-radius: 40px;
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        color: var(--text);
+        font-family: monospace;
+        font-size: 0.9rem;
+      }
+
+      .board-shell {
+        grid-area: board;
+        min-height: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      #board {
+        width: min(100%, 920px);
+        aspect-ratio: 1 / 1;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.42);
+        background: #0d0d0d;
+      }
+
+      .panel-scroll::-webkit-scrollbar {
+        width: 10px;
+      }
+
+      .panel-scroll::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+      }
+
+      .panel-scroll::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      /* ========== MÓVIL / TABLET: diseño fluido sin altura fija y fondo continuo ========== */
+      @media (max-width: 1100px) {
+        body {
+          height: auto;
+          min-height: 100dvh;
+          overflow-x: hidden;
+          overflow-y: auto;
+        }
+
+        #app {
+          height: auto;
+          min-height: 0;
+          overflow: visible;
+          grid-template-areas:
+            "board"
+            "left"
+            "right";
+          grid-template-columns: 1fr;
+          grid-template-rows: auto auto auto;
+          gap: 20px;
+          padding: 16px;
+        }
+
+        .board-shell {
+          align-items: center;
+        }
+
+        #board {
+          width: 100%;
+          max-width: 420px;
+          aspect-ratio: 1 / 1;
+          margin: 0 auto;
+        }
+
+        .panel {
+          height: auto;
+          min-height: unset;
+        }
+
+        .panel-scroll {
+          height: auto;
+          max-height: 65vh;
+          overflow-y: auto;
+        }
+      }
+
+      @media (max-width: 640px) {
+        #app {
+          gap: 14px;
+          padding: 12px;
+        }
+
+        .panel-scroll {
+          padding: 12px;
+          max-height: 70vh;
+        }
+
+        .panel h2 {
+          font-size: 1.05rem;
+        }
+
+        /* Por defecto en 640px aún usamos un ancho máximo de 340px, pero... */
+        #board {
+          max-width: 340px;
+        }
+
+        .card, .mini-card {
+          padding: 10px;
+        }
+      }
+
+      /* NUEVO: en pantallas de 600px o menos, el tablero ocupa TODO el ancho disponible */
+      @media (max-width: 600px) {
+        #board {
+          width: 100%;
+          max-width: 100% !important;   /* fuerza ancho completo */
+          margin: 0;                    /* elimina margen automático */
+        }
+
+        /* Ajustamos el contenedor board-shell para que no limite el ancho */
+        .board-shell {
+          width: 100%;
+          padding: 0;
+        }
+
+        /* Opcional: reducir un poco el padding lateral de la app para ganar espacio */
+        #app {
+          padding: 12px 8px;
+        }
+      }
+    </style>
+    <script type="module" crossorigin src="/SimpleChessBoard/assets/index-y4038ggv.js"></script>
+    <link rel="stylesheet" crossorigin href="/SimpleChessBoard/assets/index-2PnXosPy.css">
+  </head>
+  <body>
+    <div id="app">
+      <aside class="panel" style="grid-area: left">
+        <div class="panel-scroll">
+          <h2>Controls & Auto Play</h2>
+          <div id="interactivityPanel"></div>
+        </div>
+      </aside>
+
+      <main class="board-shell">
+        <div id="board"></div>
+      </main>
+
+      <aside class="panel" style="grid-area: right">
+        <div class="panel-scroll">
+          <h2>Styles</h2>
+          <div id="stylesPanel"></div>
+        </div>
+      </aside>
+    </div>
+
+  </body>
+</html>
