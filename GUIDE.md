@@ -1,5 +1,3 @@
-# docs/guide.md
-
 # SimpleChessBoard — Full Guide
 
 ## Table of Contents
