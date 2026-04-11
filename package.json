@@ -1,6 +1,6 @@
 {
     "name": "@0dexz0/simple-chess-board",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "An open-source chessboard library focused on simplicity, with real-time style customization and flexible interactivity.",
     "keywords": [
         "chess",
