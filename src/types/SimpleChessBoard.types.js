@@ -69,6 +69,8 @@
  *   'redo:end': { move: ChessMove },
  *   'reset-position:before': { cancel: () => boolean },
  *   'reset-position:end': void,
+ *   'undo-all:start': void,
+ *   'redo-all:start': void,
  *   'undo-all:end': void,
  *   'redo-all:end': void,
  * }} SimpleChessBoardEventMap
