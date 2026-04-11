@@ -1458,6 +1458,7 @@ export class SimpleChessBoard {
 
     //#region Navigation
     undoAllMoves() {
+        this.#emit('undo-all:start')
         while (this.#historyState.currentIndex >= 0) {
             this.undoMove()
         }
@@ -1465,6 +1466,7 @@ export class SimpleChessBoard {
     }
 
     redoAllMoves() {
+        this.#emit('redo-all:start')
         while (this.#historyState.currentIndex < this.#historyState.moves.length - 1) {
             this.redoMove()
         }
