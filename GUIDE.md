@@ -102,8 +102,14 @@ const board = new SimpleChessBoard({
         'reset-position:end': () => {},
         // data: void
 
+        'undo-all:start': () => {},
+        // data void
+
         'undo-all:end': () => {},
         // data: void
+
+        'redo-all:start': () => {},
+        // data void
 
         'redo-all:end': () => {},
         // data: void
@@ -736,7 +742,9 @@ As explained in [section 7](#7-how-to-create-marks-with-code), there are 5 types
 | `redo:end` | `{ move: ChessMove }` |
 | `reset-position:before` | `{ cancel: () => boolean }` |
 | `reset-position:end` | `void` |
+| `undo-all:start` | `void` |
 | `undo-all:end` | `void` |
+| `redo-all:start` | `void` |
 | `redo-all:end` | `void` |
 
 ### Type Pos
