@@ -1,8 +1,28 @@
 {
-    "name": "simple-chess-board",
-    "version": "0.1.0",
+    "name": "@0dexz0/simple-chess-board",
+    "version": "0.1.1",
+    "description": "An open-source chessboard library focused on simplicity, with real-time style customization and flexible interactivity.",
+    "keywords": [
+        "chess",
+        "chessboard",
+        "vanilla",
+        "chess-ui"
+    ],
+    "license": "MPL-2.0",
+    "author": "0Dexz0",
     "type": "module",
     "main": "./src/core/SimpleChessBoard.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/0Dexz0/SimpleChessBoard"
+    },
+    "homepage": "https://0dexz0.github.io/SimpleChessBoard/",
+    "sideEffects": [
+        "./src/styles/*.css"
+    ],
+    "publishConfig": {
+        "access": "public"
+    },
     "exports": {
         ".": "./src/core/SimpleChessBoard.js",
         "./helpers": "./src/helpers/chess-helpers.js",
@@ -10,7 +30,8 @@
         "./themes": "./src/themes/index.js"
     },
     "files": [
-        "src"
+        "src",
+        "GUIDE.md"
     ],
     "scripts": {
         "pack": "npm pack --pack-destination ./tgz"
