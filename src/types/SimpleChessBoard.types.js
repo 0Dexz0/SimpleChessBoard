@@ -7,28 +7,152 @@
  * Project: https://github.com/0Dex0/SimpleChessBoard
  */
 
+/** @typedef {import('chess.js').Move} ChessMove */
+
+//#region Core
 /**
- * @typedef {Object} ChessMove
- * @property {string} color - 'w' | 'b'
- * @property {string} from - Casilla origen (ej: "e2")
- * @property {string} to - Casilla destino (ej: "e4")
- * @property {string} piece - Tipo de pieza ('p','n','b','r','q','k')
- * @property {string} san - Notación algebraica (ej: "Nf3", "exd5", "O-O")
- * @property {string} [lan] - Long algebraic notation (ej: "e2e4")
- * @property {string} [before] - FEN antes del movimiento
- * @property {string} [after] - FEN después del movimiento
- * @property {string} [captured] - Pieza capturada
- * @property {string} [promotion] - Pieza de promoción ('q','r','b','n')
- * @property {'n'|'b'|'e'|'c'|'k'|'q'} flags 
- * 
- * // Métodos que agrega chess.js
- * @property {() => boolean} isCapture
- * @property {() => boolean} isPromotion
- * @property {() => boolean} isEnPassant
- * @property {() => boolean} isKingsideCastle
- * @property {() => boolean} isQueensideCastle
+ * @typedef {{x: number, y: number}} Coords
+ * @typedef {'normal' | 'shift' | 'ctrl' | 'alt' | 'persistent'} MarkType
+ * @typedef {string | Coords | SVGUseElement} Pos
+ * @typedef {{
+ *   color?: string,
+ *   opacity?: number,
+ *   typeStyle?: MarkType
+ * }} MarkOptions
+ * @typedef {(type: MarkType, from: Pos, to: Pos, options?: MarkOptions) => void} RenderMarkArrow
+ * @typedef {(type: MarkType, pos: Pos, options?: MarkOptions) => void} RenderMarkSquare
+ * @typedef {(type?: MarkType) => void} ClearMarks
+ * @typedef {(type?: MarkType, pos?: Pos) => void} ClearMarkSquares
+ * @typedef {(type?: MarkType, from?: Pos, to?: Pos) => void} ClearMarkArrows
+ * @typedef {(from: Pos, to: Pos, animate?: true, promotion?: 'q' | 'r' | 'b' | 'n') => void} ExecuteMove
+ */
+//#endregion
+
+
+//#region Interactivity
+/**
+ * @typedef {{
+ *      enabled?: boolean,
+ *      drag?: {
+ *          enabled?: boolean,
+ *          trail?: {
+ *              enabled?: boolean,
+ *              circle?: boolean
+ *          }
+ *      },
+ *      selection?: {
+ *          enabled?: boolean,
+ *          ownPieces?: boolean,
+ *          enemyPieces?: boolean
+ *      },
+ *      deselection?: {
+ *          enabled?: boolean,
+ *          onClick?: {
+ *              enabled?: boolean,
+ *              empty?: boolean,
+ *              selectedPiece?: boolean
+ *          },
+ *          onDrop?: {
+ *              enabled?: boolean,
+ *              illegalMove?: boolean,
+ *              selectedPiece?: boolean
+ *          }
+ *      },
+ *      marks?: {
+ *          enabled?: boolean,
+ *          squares?: boolean,
+ *          arrows?: boolean
+ *      },
+ *      keyboard?: {
+ *          enabled?: boolean,
+ *          navigation?: {
+ *              enabled?: boolean,
+ *              undoMove?: boolean,
+ *              redoMove?: boolean,
+ *              undoAllMoves?: boolean,
+ *              redoAllMoves?: boolean
+ *          },
+ *          shortcuts?: {
+ *              enabled?: boolean,
+ *              flipBoard?: boolean,
+ *              toggleMarks?: boolean
+ *          }
+ *      }
+ * }} Interactivity
+ */
+//#endregion
+
+
+//#region Style
+/**
+ * @typedef {{
+ *      board?: {
+ *          color1?: string,
+ *          color2?: string
+ *      },
+ *      dragPiece?: {
+ *          cursor?: string,
+ *          original?: {
+ *              opacity?: number
+ *          },
+ *          clone?: {
+ *              opacity?: number,
+ *              scale?: number,
+ *              deltaPosition?: {
+ *                  x?: number,
+ *                  y?: number
+ *              }
+ *          }
+ *      },
+ *      dragTrail?: {
+ *          circle?: {
+ *              radius?: number,
+ *              color?: string,
+ *              opacity?: number
+ *          }
+ *      },
+ *      piece?: {
+ *          cursor?: string,
+ *          animation?: {
+ *              x?: { time?: string, type?: string },
+ *              y?: { time?: string, type?: string },
+ *              opacity?: { time?: string, type?: string }
+ *          }
+ *      },
+ *      legalMove?: {
+ *          empty?: { radius?: number, color?: string, opacity?: number },
+ *          capture?: { radius?: number, color?: string, opacity?: number }
+ *      },
+ *      highlightSquare?: {
+ *          selectedPiece?: { color?: string, opacity?: number },
+ *          lastMove?: {
+ *              from?: { color?: string, opacity?: number },
+ *              to?: { color?: string, opacity?: number }
+ *          },
+ *          checkKing?: { color?: string, opacity?: number }
+ *      },
+ *      marks?: {
+ *          squares?: {
+ *              normal?: { color?: string, opacity?: string | number },
+ *              shift?: { color?: string, opacity?: string | number },
+ *              ctrl?: { color?: string, opacity?: string | number },
+ *              alt?: { color?: string, opacity?: string | number }
+ *          },
+ *          arrows?: {
+ *              normal?: { color?: string, opacity?: string | number },
+ *              shift?: { color?: string, opacity?: string | number },
+ *              ctrl?: { color?: string, opacity?: string | number },
+ *              alt?: { color?: string, opacity?: string | number }
+ *          }
+ *      }
+ * }} Style
  */
 
+export { }
+//#endregion
+
+
+//#region Listeners
 /**
  * @typedef {{
  *   'selection:change': {
@@ -84,6 +208,9 @@
  * }} SimpleChessBoardListeners
  */
 
+export { }
+//#endregion
+
 /**
  * @typedef {Object} SimpleChessBoardOptions
  * @property {HTMLElement} container
@@ -91,32 +218,26 @@
  * @property {"w"|"b"} [playerColor]
  * @property {"w"|"b"} [orientation]
  * @property {string} [piecesPath]
- * @property {import('../config/default-interactivity.js').Interactivity} [interactivity]
- * @property {import('../config/default-style.js').Style} [style]
+ * @property {Interactivity} [interactivity]
+ * @property {Style} [style]
  * @property {SimpleChessBoardListeners} [$listeners]
  */
 
-/**
- * @typedef {{x: number, y: number}} Coords
- * @typedef {'normal' | 'shift' | 'ctrl' | 'alt' | 'persistent'} MarkType
- * @typedef {string | Coords | SVGUseElement} Pos
- * @typedef {{
- *   color?: string,
- *   opacity?: number,
- *   typeStyle?: MarkType
- * }} MarkOptions
- * @typedef {(type: MarkType, from: Pos, to: Pos, options?: MarkOptions) => void} RenderMarkArrow
- * @typedef {(type: MarkType, pos: Pos, options?: MarkOptions) => void} RenderMarkSquare
- */
-
-/**
- * @typedef {(type?: MarkType) => void} ClearMarks
- * @typedef {(type?: MarkType, pos?: Pos) => void} ClearMarkSquares
- * @typedef {(type?: MarkType, from?: Pos, to?: Pos) => void} ClearMarkArrows
- */
-
-/**
- * @typedef {(from: Pos, to: Pos, animate?: true, promotion?: 'q' | 'r' | 'b' | 'n') => void} ExecuteMove
- */
-
-export { }
+export {
+    ChessMove,
+    Coords,
+    MarkType,
+    Pos,
+    MarkOptions,
+    RenderMarkArrow,
+    RenderMarkSquare,
+    ClearMarks,
+    ClearMarkSquares,
+    ClearMarkArrows,
+    ExecuteMove,
+    Interactivity,
+    Style,
+    SimpleChessBoardEventMap,
+    SimpleChessBoardListeners,
+    SimpleChessBoardOptions
+}
