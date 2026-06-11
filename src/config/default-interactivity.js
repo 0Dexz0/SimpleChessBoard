@@ -8,9 +8,8 @@
  */
 
 /**
- * @typedef {typeof DEFAULT_INTERACTIVITY} Interactivity
+ * @type {import('../types/SimpleChessBoard.types.js').Interactivity}
  */
-
 export const DEFAULT_INTERACTIVITY = {
     enabled: true,
 
