@@ -57,7 +57,7 @@ const board = new SimpleChessBoard({
 ## 2. How to listen to an event
 
 ```js
-import { SimpleChessBoard } from '0dexz0/simple-chess-board'
+import { SimpleChessBoard } from '@0dexz0/simple-chess-board'
 
 const board = new SimpleChessBoard({
     container: document.getElementById('board'),
@@ -103,13 +103,13 @@ const board = new SimpleChessBoard({
         // data: void
 
         'undo-all:start': () => {},
-        // data void
+        // data: void
 
         'undo-all:end': () => {},
         // data: void
 
         'redo-all:start': () => {},
-        // data void
+        // data: void
 
         'redo-all:end': () => {},
         // data: void
@@ -384,7 +384,7 @@ const board = new SimpleChessBoard({
 ### Board
 
 ```js
-style {
+style: {
     board: {
         color1: "#739552",
         color2: "#EBECD0"
@@ -396,9 +396,10 @@ style {
 ### Drag Piece
 
 ```js
-style {
+style: {
     ...
-    cursor: "grabbing",
+    dragPiece: {
+        cursor: "grabbing",
         original: { opacity: 0.5 },
         clone: {
             opacity: 1,
@@ -408,6 +409,7 @@ style {
                 y: 0
             }
         },
+    }
     ...
 }
 ```
@@ -415,7 +417,7 @@ style {
 ### Drag Trail
 
 ```js
-style {
+style: {
     ...
     dragTrail: {
         circle: { radius: 0.75, color: "black", opacity: 0.141 },
@@ -427,7 +429,7 @@ style {
 ### Piece
 
 ```js
-style {
+style: {
     ...
     piece: {
         cursor: "grab",
@@ -444,7 +446,7 @@ style {
 ### Legal Moves
 
 ```js
-style {
+style: {
     ...
     legalMove: {
         empty: { radius: 0.17, color: "black", opacity: 0.141 },
@@ -457,7 +459,7 @@ style {
 ### Highlight Square
 
 ```js
-style {
+style: {
     ...
     highlightSquare: {
         selectedPiece: { color: "rgb(255, 255, 51)", opacity: 0.5 },
@@ -476,7 +478,7 @@ style {
 ### Marks
 
 ```js
-style {
+style: {
     ...
     marks: {
         squares: {
@@ -759,6 +761,20 @@ Can be any of the following formats:
 
 All methods that accept a Pos (`selectPiece`, `executeMove`, `isEmpty`, `isMyPiece`, `isLegalMove`, `getPieceElementFrom`, `renderMarkSquare`, `renderMarkArrow`, etc.) support any of these three formats.
 
+<br>
+
+**Using types for JSDoc annotations**
+If you want to annotate variables, parameters or returns with the same types used internally (like `Pos`), you can import them directly:
+
+```js
+import * as ChessTypes from '@0dexz0/simple-chess-board/types'
+
+/** @type {ChessTypes.Pos} */
+const toPos = "e4"
+```
+
+<br>
+
 ## 10. Chess Helpers (Optional Utilities)
 
 The library includes a set of optional helper functions designed to be imported only when needed. Since they are not part of the core board logic, any helper you do not import will be excluded from your final bundle (tree-shaking friendly). This allows both you and us to add as many utilities as you want without worrying about bloat.
@@ -844,6 +860,8 @@ removeEnhancedKnightMove()
 #### Comment
 
 If you have any ideas for a helper or improvements to the current ones, feel free to submit a PR or open an issue.
+
+<br>
 
 ## Practical Examples
 
