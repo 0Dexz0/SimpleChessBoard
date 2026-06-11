@@ -7,9 +7,5 @@
  * Project: https://github.com/0Dex0/SimpleChessBoard
  */
 
-/**
- * @typedef {typeof DEFAULT_STYLE} Style
- */
-
 import { CHESSCOM_STYLE } from '../themes/chesscom'
 export const DEFAULT_STYLE = CHESSCOM_STYLE
