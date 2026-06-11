@@ -57,10 +57,12 @@ export class SimpleChessBoard {
     set position(value) { this.setPosition(value) }
     get position() { return this.#position }
 
+    /** @type {Types.Interactivity} */
     #interactivity
     set interactivity(value) { this.#interactivity = initInteractivity(value) }
     get interactivity() { return this.#interactivity }
 
+    /** @type {Types.Style} */
     #style
     set style(value) { this.#style = initReactiveStyles(this.svg, initStyle(value)) }
     get style() { return this.#style }
