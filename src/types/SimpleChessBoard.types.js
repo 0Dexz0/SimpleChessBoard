@@ -223,21 +223,4 @@ export { }
  * @property {SimpleChessBoardListeners} [$listeners]
  */
 
-export {
-    ChessMove,
-    Coords,
-    MarkType,
-    Pos,
-    MarkOptions,
-    RenderMarkArrow,
-    RenderMarkSquare,
-    ClearMarks,
-    ClearMarkSquares,
-    ClearMarkArrows,
-    ExecuteMove,
-    Interactivity,
-    Style,
-    SimpleChessBoardEventMap,
-    SimpleChessBoardListeners,
-    SimpleChessBoardOptions
-}
+export { }
