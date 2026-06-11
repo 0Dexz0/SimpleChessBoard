@@ -1,6 +1,6 @@
 {
     "name": "@0dexz0/simple-chess-board",
-    "version": "0.2.1",
+    "version": "0.3.0",
     "description": "An open-source chessboard library focused on simplicity, with real-time style customization and flexible interactivity.",
     "keywords": [
         "chess",
@@ -27,7 +27,8 @@
         ".": "./src/core/SimpleChessBoard.js",
         "./helpers": "./src/helpers/chess-helpers.js",
         "./config": "./src/config/index.js",
-        "./themes": "./src/themes/index.js"
+        "./themes": "./src/themes/index.js",
+        "./types": "./src/types/SimpleChessBoard.types.js"
     },
     "files": [
         "src",
