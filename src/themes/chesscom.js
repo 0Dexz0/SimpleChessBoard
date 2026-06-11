@@ -1,3 +1,7 @@
+/**
+ * @type {import('../types/SimpleChessBoard.types.js').Style}
+ */
+
 export const CHESSCOM_STYLE = {
     board: {
         color1: "#739552",
