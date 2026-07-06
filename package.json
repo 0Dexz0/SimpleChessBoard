@@ -23,15 +23,36 @@
     "publishConfig": {
         "access": "public"
     },
+    "types": "./dist-types/core/SimpleChessBoard.d.ts",
     "exports": {
-        ".": "./src/core/SimpleChessBoard.js",
-        "./helpers": "./src/helpers/chess-helpers.js",
-        "./config": "./src/config/index.js",
-        "./themes": "./src/themes/index.js",
-        "./types": "./src/types/SimpleChessBoard.types.js"
+        ".": {
+            "types": "./dist-types/core/SimpleChessBoard.d.ts",
+            "default": "./src/core/SimpleChessBoard.js"
+        },
+        "./helpers": {
+            "types": "./dist-types/helpers/chess-helpers.d.ts",
+            "default": "./src/helpers/chess-helpers.js"
+        },
+        "./config": {
+            "types": "./dist-types/config/index.d.ts",
+            "default": "./src/config/index.js"
+        },
+        "./themes": {
+            "types": "./dist-types/themes/index.d.ts",
+            "default": "./src/themes/index.js"
+        },
+        "./types": {
+            "types": "./dist-types/types/SimpleChessBoard.types.d.ts",
+            "default": "./src/types/SimpleChessBoard.types.js"
+        },
+        "./assets": {
+            "types": "./dist-types/assets/index.d.ts",
+            "default": "./src/assets/index.js"
+        }
     },
     "files": [
         "src",
+        "dist-types",
         "GUIDE.md"
     ],
     "scripts": {
@@ -39,5 +60,8 @@
     },
     "dependencies": {
         "chess.js": "1.4.0"
+    },
+    "devDependencies": {
+        "typescript": "^6.0.3"
     }
 }
