@@ -14,7 +14,7 @@ import { initInteractivity, initStyle } from '../config/config-merger'
 import { PIECE_IMAGE_MAP } from '../config/piece-image-map'
 import * as Types from '../types/SimpleChessBoard.types'
 
-import defaultPiecesPath from '../assets/Default-SVG/pieces.svg'
+import { piecesPath as defaultPiecesPath } from '../assets'
 
 
 export class SimpleChessBoard {
