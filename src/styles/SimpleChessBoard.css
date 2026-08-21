@@ -8,6 +8,7 @@
  */
 
 .simplechessboard {
+    display: block;
     -webkit-user-drag: none;
     -khtml-user-drag: none;
     -moz-user-drag: none;
