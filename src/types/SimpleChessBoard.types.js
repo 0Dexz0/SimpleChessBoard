@@ -14,17 +14,28 @@
  * @typedef {{x: number, y: number}} Coords
  * @typedef {'normal' | 'shift' | 'ctrl' | 'alt' | 'persistent'} MarkType
  * @typedef {string | Coords | SVGUseElement} Pos
+ * @typedef {'replace' | 'overlap'} MarkGroupMode
  * @typedef {{
  *   color?: string,
- *   opacity?: number,
- *   typeStyle?: MarkType
- * }} MarkOptions
- * @typedef {(type: MarkType, from: Pos, to: Pos, options?: MarkOptions) => void} RenderMarkArrow
- * @typedef {(type: MarkType, pos: Pos, options?: MarkOptions) => void} RenderMarkSquare
+ *   opacity?: number | string,
+ *   typeStyle?: string
+ * }} MarkStyle
+ * @typedef {MarkStyle} MarkOptions
+ * @typedef {MarkStyle & { width?: number }} ArrowStyle
+ * @typedef {{ layer?: number }} MarkGroupOptions
+ * @typedef {MarkGroupMode | (MarkGroupOptions & { mode: MarkGroupMode })} MarkGroupConfig
+ * @typedef {Record<string, MarkGroupConfig>} MarkGroupsConfig
+ * @typedef {(type: MarkType, from: Pos, to: Pos, style?: ArrowStyle | null, group?: string | null) => SVGPathElement | null} RenderMarkArrow
+ * @typedef {(type: MarkType, pos: Pos, style?: MarkStyle | null, group?: string | null) => SVGRectElement | null} RenderMarkSquare
+ * @typedef {(mark: SVGElement) => boolean} RemoveMark
+ * @typedef {(name: string, mode: MarkGroupMode, options?: MarkGroupOptions | null) => boolean} CreateGroupMarks
+ * @typedef {(name: string) => boolean} DeleteGroupMarks
  * @typedef {(type?: MarkType) => void} ClearMarks
  * @typedef {(type?: MarkType, pos?: Pos) => void} ClearMarkSquares
  * @typedef {(type?: MarkType, from?: Pos, to?: Pos) => void} ClearMarkArrows
- * @typedef {(from: Pos, to: Pos, animate?: true, promotion?: 'q' | 'r' | 'b' | 'n') => void} ExecuteMove
+ * @typedef {(group: string, type?: MarkType, pos?: Pos) => void} ClearGroupMarkSquares
+ * @typedef {(group: string, type?: MarkType, from?: Pos, to?: Pos) => void} ClearGroupMarkArrows
+ * @typedef {(from: Pos, to: Pos, animate?: boolean, promotion?: 'q' | 'r' | 'b' | 'n') => void} ExecuteMove
  */
 //#endregion
 
@@ -220,6 +231,7 @@ export { }
  * @property {string} [piecesPath]
  * @property {Interactivity} [interactivity]
  * @property {Style} [style]
+ * @property {MarkGroupsConfig} [markGroups]
  * @property {SimpleChessBoardListeners} [$listeners]
  */
 

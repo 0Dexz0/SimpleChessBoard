@@ -8,7 +8,7 @@ export class SimpleChessBoard {
     /**
     * @param {Types.SimpleChessBoardOptions} options
     */
-    constructor({ container, position, playerColor, orientation, piecesPath, interactivity, style, $listeners }: Types.SimpleChessBoardOptions);
+    constructor({ container, position, playerColor, orientation, piecesPath, interactivity, style, markGroups, $listeners }: Types.SimpleChessBoardOptions);
     set piecesPath(value: any);
     get piecesPath(): any;
     set orientation(value: string);
@@ -48,16 +48,23 @@ export class SimpleChessBoard {
     } | undefined;
     chessLogic: Chess | undefined;
     playerColor: any;
-    renderMarkSquare(type: Types.MarkType, pos: Types.Pos, options?: Types.MarkOptions): void;
-    renderMarkArrow(type: Types.MarkType, from: Types.Pos, to: Types.Pos, options?: Types.MarkOptions): void;
     clearAll(): void;
     clearSelection(): void;
     clearMarks(type?: Types.MarkType): void;
-    clearMarksSquares(type?: Types.MarkType, pos?: Types.Pos): void;
-    clearMarksArrows(type?: Types.MarkType, from?: Types.Pos, to?: Types.Pos): void;
     clearDragTrails(): void;
     clearHsLastMove(): void;
     clearHistory(): void;
+    createGroupMarkArrows(name: string, mode: Types.MarkGroupMode, options?: Types.MarkGroupOptions | null): boolean;
+    createGroupMarkSquares(name: string, mode: Types.MarkGroupMode, options?: Types.MarkGroupOptions | null): boolean;
+    deleteGroupMarkArrows(name: string): boolean;
+    deleteGroupMarkSquares(name: string): boolean;
+    renderMarkArrow(type: Types.MarkType, from: Types.Pos, to: Types.Pos, style?: Types.ArrowStyle | null, group?: string | null): SVGPathElement | null;
+    renderMarkSquare(type: Types.MarkType, pos: Types.Pos, style?: Types.MarkStyle | null, group?: string | null): SVGRectElement | null;
+    removeMark(mark: SVGElement): boolean;
+    clearMarksArrows(type?: Types.MarkType, from?: Types.Pos, to?: Types.Pos): void;
+    clearMarksSquares(type?: Types.MarkType, pos?: Types.Pos): void;
+    clearGroupMarkArrows(group: string, type?: Types.MarkType, from?: Types.Pos, to?: Types.Pos): void;
+    clearGroupMarkSquares(group: string, type?: Types.MarkType, pos?: Types.Pos): void;
     /**
     * @param {Types.Pos} pos
     * @returns {SVGUseElement}
@@ -75,7 +82,7 @@ export class SimpleChessBoard {
     }): boolean;
     setPlayerColor(color: any): void;
     resetPosition(): void;
-    executeMove(from: Types.Pos, to: Types.Pos, animate?: true, promotion?: "q" | "r" | "b" | "n"): void;
+    executeMove(from: Types.Pos, to: Types.Pos, animate?: boolean, promotion?: "q" | "r" | "b" | "n"): void;
     cancelPromotion(): void;
     /** @param {'w' | 'b'} [force] */
     flipBoard(force?: "w" | "b"): void;

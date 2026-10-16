@@ -5,17 +5,34 @@ export type Coords = {
 };
 export type MarkType = "normal" | "shift" | "ctrl" | "alt" | "persistent";
 export type Pos = string | Coords | SVGUseElement;
-export type MarkOptions = {
+export type MarkGroupMode = "replace" | "overlap";
+export type MarkStyle = {
     color?: string;
-    opacity?: number;
-    typeStyle?: MarkType;
+    opacity?: number | string;
+    typeStyle?: string;
 };
-export type RenderMarkArrow = (type: MarkType, from: Pos, to: Pos, options?: MarkOptions) => void;
-export type RenderMarkSquare = (type: MarkType, pos: Pos, options?: MarkOptions) => void;
+export type MarkOptions = MarkStyle;
+export type ArrowStyle = MarkStyle & {
+    width?: number;
+};
+export type MarkGroupOptions = {
+    layer?: number;
+};
+export type MarkGroupConfig = MarkGroupMode | (MarkGroupOptions & {
+    mode: MarkGroupMode;
+});
+export type MarkGroupsConfig = Record<string, MarkGroupConfig>;
+export type RenderMarkArrow = (type: MarkType, from: Pos, to: Pos, style?: ArrowStyle | null, group?: string | null) => SVGPathElement | null;
+export type RenderMarkSquare = (type: MarkType, pos: Pos, style?: MarkStyle | null, group?: string | null) => SVGRectElement | null;
+export type RemoveMark = (mark: SVGElement) => boolean;
+export type CreateGroupMarks = (name: string, mode: MarkGroupMode, options?: MarkGroupOptions | null) => boolean;
+export type DeleteGroupMarks = (name: string) => boolean;
 export type ClearMarks = (type?: MarkType) => void;
 export type ClearMarkSquares = (type?: MarkType, pos?: Pos) => void;
 export type ClearMarkArrows = (type?: MarkType, from?: Pos, to?: Pos) => void;
-export type ExecuteMove = (from: Pos, to: Pos, animate?: true, promotion?: "q" | "r" | "b" | "n") => void;
+export type ClearGroupMarkSquares = (group: string, type?: MarkType, pos?: Pos) => void;
+export type ClearGroupMarkArrows = (group: string, type?: MarkType, from?: Pos, to?: Pos) => void;
+export type ExecuteMove = (from: Pos, to: Pos, animate?: boolean, promotion?: "q" | "r" | "b" | "n") => void;
 export type Interactivity = {
     enabled?: boolean;
     drag?: {
@@ -242,6 +259,7 @@ export type SimpleChessBoardOptions = {
     piecesPath?: string | undefined;
     interactivity?: Interactivity | undefined;
     style?: Style | undefined;
+    markGroups?: MarkGroupsConfig | undefined;
     $listeners?: SimpleChessBoardListeners | undefined;
 };
 //# sourceMappingURL=SimpleChessBoard.types.d.ts.map
