@@ -1374,6 +1374,7 @@ export class SimpleChessBoard {
 
         const pieces = this.g.pieces
         pieces.innerHTML = ''
+
         let x = 0, y = 0
         for (let char of boardFEN) {
             if (char === '/') { y++; x = 0; continue }
@@ -1381,9 +1382,10 @@ export class SimpleChessBoard {
 
             const square = String.fromCharCode(97 + x) + (8 - y)
             const color = char === char.toUpperCase() ? 'w' : 'b'
+            const { x: ox, y: oy } = this.getOrientedCoords({ x, y })
             pieces.insertAdjacentHTML('beforeend',
                 `<use href="#${char}" 
-                    x="${x}" y="${y}" 
+                    x="${ox}" y="${oy}" 
                     data-square="${square}"
                     data-color="${color}"
                 >`
