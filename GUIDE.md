@@ -11,7 +11,13 @@
 - [5. Interactivity configuration](#5-interactivity-configuration)
 - [6. Style configuration](#6-style-configuration)
 - [7. How to create marks with code](#7-how-to-create-marks-with-code)
+  - [Style options](#style-options)
+  - [Arrow width](#arrow-width)
+  - [Return value and invalid input](#return-value-and-invalid-input)
+  - [Mark groups](#mark-groups)
 - [8. How to remove marks with code](#8-how-to-remove-marks-with-code)
+  - [Remove one specific mark](#remove-one-specific-mark)
+  - [Clear the marks of one group](#clear-the-marks-of-one-group)
 - [9. API Reference](#9-api-reference)
 - [10. Chess helpers (optional utilities)](#10-chess-helpers-optional-utilities)
 - [Practical Examples](#practical-examples)
@@ -24,7 +30,7 @@
 With this setup, the board will work using the default configuration values.
 
 ```js
-import { SimpleChessBoard } from '0dexz0/simple-chess-board'
+import { SimpleChessBoard } from '@0dexz0/simple-chess-board'
 
 const board = new SimpleChessBoard({
     container: document.getElementById('board'),
@@ -35,7 +41,7 @@ const board = new SimpleChessBoard({
 
 ### All the parameters
 
-There are **8 parameters**, all except the container are optional.
+There are **9 parameters**, all except the container are optional.
 
 ```js
 const board = new SimpleChessBoard({
@@ -50,9 +56,14 @@ const board = new SimpleChessBoard({
     style: {
         ...
     },
+    markGroups: {
+        ...
+    },
     $listeners: {}
 })
 ```
+
+`markGroups` lets you create [mark groups](#creating-groups-from-the-constructor) when the board is created.
 
 ## 2. How to listen to an event
 
@@ -359,6 +370,22 @@ interactivity: {
 }
 ```
 
+#### Clear the selection with Escape
+
+The `shortcuts` object also reads an `escapeClearSelection` option. When it is `true`, pressing the **Escape** key clears the current selection (the same as calling `board.clearSelection()`).
+
+```js
+interactivity: {
+    keyboard: {
+        shortcuts: {
+            escapeClearSelection: true // Escape key
+        }
+    }
+}
+```
+
+> **Note:** unlike the options above, `escapeClearSelection` is not part of the default values, so the Escape key does nothing unless you set it to `true`.
+
 ### Clarification
 
 You're probably wondering why there are so many "enabled".
@@ -508,7 +535,9 @@ The only exception is the radius of the legal move and drag trail circle.
 
 ## 7. How to create Marks with code
 
-As a user, with a right click you can create squares and arrows.
+As a user, with a right click you can create squares and arrows. Right-clicking the same square or arrow again removes it (toggle).
+
+Marks created with code **never toggle**: `renderMarkSquare` and `renderMarkArrow` always draw.
 
 There are 4 types of marks: `normal`, `shift`, `ctrl`, `alt`.
 
@@ -570,7 +599,189 @@ board.renderMarkArrow('persistent', 'e2', 'e4', {
 })
 ```
 
+### Style options
+
+Both `renderMarkSquare` and `renderMarkArrow` accept an optional style object (you can pass `null` to skip it).
+
+| Option | Applies to | Description |
+| :----- | :--------- | :---------- |
+| `color` | squares, arrows | Fill color of the mark (any CSS color). |
+| `opacity` | squares, arrows | Opacity of the mark (number or string). |
+| `typeStyle` | squares, arrows | One or more CSS classes (separated by spaces) added to the mark. Use `'normal'`, `'shift'`, `'ctrl'` or `'alt'` to borrow the look of that type. |
+| `width` | arrows only | Thickness multiplier. See [Arrow width](#arrow-width). |
+
+### Arrow width
+
+Arrows accept a `width` in their style object. It is a **multiplier** of the default thickness: `1` is the default, `1.2` is 20% thicker and `0.8` is 20% thinner.
+
+```js
+board.renderMarkArrow('normal', 'e2', 'e4', { width: 1.2 })
+board.renderMarkArrow('shift', 'g1', 'f3', { width: 0.8, color: 'green' })
+```
+
+The start and the tip of the arrow stay in place, only the thickness changes (the head grows backwards from the tip).
+
+The maximum is `1.5`: bigger values are clamped to it. An invalid value (not a number, `NaN`, or `<= 0`) logs a warning in the console and uses `1`.
+
+### Return value and invalid input
+
+`renderMarkSquare` and `renderMarkArrow` return the new SVG element: an `SVGRectElement` for squares and an `SVGPathElement` for arrows. Keep it if you want to remove that exact mark later with [`removeMark`](#remove-one-specific-mark).
+
+```js
+const arrow = board.renderMarkArrow('persistent', 'e2', 'e4', { color: 'green' })
+
+// ...later
+board.removeMark(arrow)
+```
+
+They return `null` when nothing was drawn:
+
+- Invalid mark type (warning in the console).
+- Invalid position (warning in the console).
+- The group does not exist (warning in the console).
+- An arrow whose `from` and `to` are the same square (no warning).
+
+Drawing the same mark twice (same type, same coordinates) does not create duplicates: by default the new mark replaces the old one. See [Modes](#modes) to change that.
+
+Every mark has a `data-coords` attribute (`"x,y"` for squares, `"x1,y1,x2,y2"` for arrows) and, if it belongs to a group you created, a `data-group` attribute. They can be useful for your own CSS or queries.
+
+### Mark groups
+
+By default, every mark goes into the **default group**. That is enough for most cases, but sometimes you want to handle a set of marks as a unit: engine suggestions, threats, opening ideas... Groups let you:
+
+- Clear a set of marks without touching the others.
+- Decide which set is drawn on top of which (layers).
+- Decide if repeated marks replace each other or stack (modes).
+
+Arrows and squares have **independent** groups: `createGroupMarkArrows('ideas', ...)` does not create a square group named `'ideas'`.
+
+#### Creating a group
+
+```js
+// createGroupMarkArrows(name, mode, options?)
+board.createGroupMarkArrows('engine', 'replace')
+
+// createGroupMarkSquares(name, mode, options?)
+board.createGroupMarkSquares('threats', 'overlap', { layer: 1 })
+```
+
+It returns `true` if the group was created. It returns `false` (and logs a warning) if:
+
+- The name is not a non-empty string, or a group with that name already exists for that kind of mark.
+- The mode is not `'replace'` or `'overlap'`.
+- `layer` is not an integer greater than or equal to 1.
+
+#### Creating groups from the constructor
+
+You don't need to call `createGroupMark*` after creating the board. You can declare the groups with the `markGroups` option.
+
+```js
+const board = new SimpleChessBoard({
+    container: document.getElementById('board'),
+
+    markGroups: {
+        stockfish: 'overlap',                   // name: mode
+        theory: { mode: 'replace', layer: 2 }   // name: { mode, layer? }
+    }
+})
+
+// They are ready to use
+board.renderMarkArrow('normal', 'e2', 'e4', null, 'stockfish')
+board.renderMarkSquare('ctrl', 'e4', null, 'theory')
+```
+
+Each entry can be written in two ways:
+
+| Format | Example |
+| :----- | :------ |
+| `name: mode` | `stockfish: 'overlap'` |
+| `name: { mode, layer? }` | `theory: { mode: 'replace', layer: 2 }` |
+
+`mode` and `layer` follow the same rules as in [`createGroupMarkArrows`](#creating-a-group) (`'replace'` or `'overlap'`, and an integer `>= 1`).
+
+Things to keep in mind:
+
+- **One entry creates two groups:** one for arrows and one for squares, with the same name, mode and layer. That is why `'stockfish'` can be used in both `renderMarkArrow` and `renderMarkSquare`. If you need a different mode or layer for each kind, create them with `createGroupMarkArrows` / `createGroupMarkSquares` instead.
+- **The order matters when there is no `layer`:** the entries are created in order and each one goes below the previous ones, so the **first** one ends up on top.
+- **Invalid entries are skipped:** a warning is logged in the console (once per entry) and the rest of the groups are still created.
+- **Names must be unique:** creating by hand a group with the same name of one declared in the constructor returns `false`.
+- Groups declared this way behave exactly like any other group: you can clear them with `clearGroupMark*` and delete them with `deleteGroupMark*`.
+
+#### Drawing inside a group
+
+Pass the name of the group as the last argument.
+
+```js
+// renderMarkArrow(type, from, to, style?, group?)
+board.renderMarkArrow('normal', 'e2', 'e4', null, 'engine')
+board.renderMarkArrow('normal', 'g1', 'f3', { color: 'green' }, 'engine')
+
+// renderMarkSquare(type, pos, style?, group?)
+board.renderMarkSquare('ctrl', 'e4', { opacity: 0.4 }, 'threats')
+```
+
+If the group does not exist, nothing is drawn, a warning is logged and `null` is returned.
+
+#### Modes
+
+| Mode | Behavior |
+| :--- | :------- |
+| `'replace'` | Drawing a mark removes the existing mark with the same type and the same coordinates in any `'replace'` group (the default group included). The right-click toggle of the user also affects these marks. |
+| `'overlap'` | Marks stack. They never replace other marks, they are never replaced, and the right-click toggle of the user never removes them. |
+
+The default group (marks without a group) works as `'replace'`.
+
+#### Layers
+
+- Marks drawn **without a group** (including the ones the user draws with the right click) are in layer `0`, which is always above every group.
+- `layer: 1` is above every other group, `2` is below `1`, and so on.
+- If you don't pass `layer`, the group is placed **below** all the existing groups.
+- If two groups have the same layer, the oldest one stays on top.
+- Inside a group, the types are stacked in this order, from bottom to top: `normal`, `shift`, `ctrl`, `alt`, `persistent`.
+
+```js
+board.createGroupMarkArrows('theory', 'overlap', { layer: 2 })
+board.createGroupMarkArrows('engine', 'replace', { layer: 1 }) // above 'theory'
+```
+
+#### Deleting a group
+
+```js
+board.deleteGroupMarkArrows('engine')  // true: the group and all its marks are removed (persistent included)
+board.deleteGroupMarkSquares('nope')   // false: that group does not exist
+```
+
+#### Groups and user actions
+
+The marks of a group follow the same rules as any other mark: a left click, a move, undo/redo or `setPosition` remove them, except the ones of type `'persistent'`.
+
+#### Example: showing an engine suggestion
+
+```js
+const board = new SimpleChessBoard({
+    container: document.getElementById('board'),
+
+    markGroups: {
+        engine: { mode: 'replace', layer: 1 }
+    }
+})
+
+function showBestMove(from, to) {
+    // Remove the previous suggestion (persistent included)
+    board.clearGroupMarkArrows('engine')
+
+    // 'persistent' so it survives the clicks of the user
+    board.renderMarkArrow('persistent', from, to, {
+        color: 'dodgerblue',
+        opacity: 0.7,
+        width: 1.2
+    }, 'engine')
+}
+```
+
 ## 8. How to remove Marks with code
+
+The `clearMarks*` methods of this section work on **all the groups** (the default group and every group you created). To clear only one group, see [Clear the marks of one group](#clear-the-marks-of-one-group).
 
 ### Mark square
 
@@ -606,6 +817,13 @@ board.clearMarksArrows('persistent', 'e2', 'e4')
 // Remove a specific arrow from all types (persistent is not affected)
 board.clearMarksArrows(null, 'e2', 'e4')
 
+// Remove every arrow that starts at e2 (omit "to")
+board.clearMarksArrows('normal', 'e2')
+board.clearMarksArrows(null, 'e2')
+
+// "to" cannot be used without "from": it logs a warning and does nothing
+board.clearMarksArrows('normal', null, 'e4')
+
 // Remove all arrows from a specific type
 board.clearMarksArrows('normal')
 board.clearMarksArrows('persistent')
@@ -628,6 +846,41 @@ board.clearMarks('persistent')
 board.clearMarks()
 ```
 
+### Remove one specific mark
+
+```js
+const square = board.renderMarkSquare('persistent', 'e4', { typeStyle: 'ctrl' })
+
+board.removeMark(square) // true
+board.removeMark(square) // false: it was already removed
+```
+
+`removeMark(mark)` removes exactly the element returned by `renderMarkSquare` or `renderMarkArrow`, whatever its type or group (persistent included). It returns `false` if the argument is not a live mark of this board.
+
+### Clear the marks of one group
+
+```js
+// clearGroupMarkArrows(group, type?, from?, to?)
+board.clearGroupMarkArrows('engine')                    // the whole group
+board.clearGroupMarkArrows('engine', 'normal')          // only one type
+board.clearGroupMarkArrows('engine', 'normal', 'e2')    // arrows of that type that start at e2
+board.clearGroupMarkArrows('engine', null, 'e2', 'e4')  // that arrow, any type
+
+// clearGroupMarkSquares(group, type?, pos?)
+board.clearGroupMarkSquares('threats')                  // the whole group
+board.clearGroupMarkSquares('threats', 'ctrl')          // only one type
+board.clearGroupMarkSquares('threats', null, 'e4')      // that square, any type
+```
+
+These methods differ from the `clearMarks*` ones in two things:
+
+| Methods | Scope | Without `type` |
+| :------ | :---- | :------------- |
+| `clearMarks`, `clearMarksSquares`, `clearMarksArrows` | All the groups | `'persistent'` is **not** affected |
+| `clearGroupMarkSquares`, `clearGroupMarkArrows` | One group | `'persistent'` **is** removed |
+
+If the group does not exist, a warning is logged and nothing happens. The default group has no name, so it cannot be targeted with these methods: use the `clearMarks*` methods or [`removeMark`](#remove-one-specific-mark) for its marks.
+
 ## 9. API Reference
 
 ### Reactive Properties (Getters / Setters)
@@ -648,7 +901,7 @@ board.clearMarks()
 | `setPlayerColor(color)` | Changes the player's color to the new value. |
 | `flipBoard(force?)` | Rotates the board. Pass `'w'` or `'b'` to force a side down, otherwise toggles. |
 | `setPiecesPath(newPath)` | Changes the path of the SVG file containing the sprites of the pieces to a new path. |
-| `toggleMarks()` | Shows/hides all user marks (squares and arrows). |
+| `toggleMarks()` | Shows/hides all marks (squares and arrows), including groups and `'persistent'` marks. |
 
 ### Piece Selection & Movement
 
@@ -692,8 +945,15 @@ As explained in [section 7](#7-how-to-create-marks-with-code), there are 5 types
 
 | Method | Description |
 |--------|-------------|
-| `renderMarkSquare(type, pos, options?)` | Adds a mark square of the specified type. |
-| `renderMarkArrow(type, from, to, options?)` | Adds a mark arrow of the specified type. |
+| `renderMarkSquare(type, pos, style?, group?)` | Draws a square mark. It never toggles. Returns the `SVGRectElement`, or `null` if nothing was drawn. [See details →](#return-value-and-invalid-input) |
+| `renderMarkArrow(type, from, to, style?, group?)` | Draws an arrow mark. It never toggles. Returns the `SVGPathElement`, or `null` if nothing was drawn. `style.width` is a thickness multiplier (max `1.5`). [See details →](#arrow-width) |
+| `removeMark(mark)` | Removes one specific mark (the element returned by `renderMarkSquare` / `renderMarkArrow`). Returns `false` if it is not a live mark of this board. |
+| `createGroupMarkSquares(name, mode, { layer }?)` | Creates a group of square marks. `mode` is `'replace'` or `'overlap'`. Returns `true` if created. [See details →](#mark-groups) |
+| `createGroupMarkArrows(name, mode, { layer }?)` | Same as above, for arrows (arrows and squares have independent groups and layers). |
+| `deleteGroupMarkSquares(name)` | Removes the group and all its marks. Returns `false` if it does not exist. |
+| `deleteGroupMarkArrows(name)` | Same as above, for arrows. |
+
+Groups can also be declared when creating the board with the `markGroups` option. [See details →](#creating-groups-from-the-constructor)
 
 ### History Navigation
 
@@ -711,9 +971,11 @@ As explained in [section 7](#7-how-to-create-marks-with-code), there are 5 types
 |--------|-------------|
 | `clearAll()` | Clears selection, legal moves, all marks (excluding persistent), drag trails, last-move highlight, promotion dialog, and history. |
 | `clearSelection()` | Deselects the currently selected piece, clears legal moves, and removes drag trails. |
-| `clearMarks(type?)` | Removes all marks (squares and arrows). Optionally only one type (e.g., `'normal'`). Does not affect `'persistent'` unless explicitly passed. |
-| `clearMarksSquares(type?, pos?)` | Removes square marks. If `type` is provided, only removes squares of that type. If `pos` is provided, only removes the specific square. |
-| `clearMarksArrows(type?, from?, to?)` | Removes arrow marks. If `type` is provided, only removes arrows of that type. If `from` and `to` are provided, only removes the specific arrow. |
+| `clearMarks(type?)` | Removes all marks (squares and arrows) of **all groups**. Optionally only one type (e.g., `'normal'`). Does not affect `'persistent'` unless explicitly passed. |
+| `clearMarksSquares(type?, pos?)` | Removes square marks of all groups. If `type` is provided, only removes squares of that type. If `pos` is provided, only removes the specific square. |
+| `clearMarksArrows(type?, from?, to?)` | Removes arrow marks of all groups. If `type` is provided, only removes arrows of that type. If only `from` is provided, removes every arrow that starts there. If `from` and `to` are provided, only removes that specific arrow. |
+| `clearGroupMarkSquares(group, type?, pos?)` | Same as `clearMarksSquares`, but only in one group. Without `type`, `'persistent'` **is** included. [See details →](#clear-the-marks-of-one-group) |
+| `clearGroupMarkArrows(group, type?, from?, to?)` | Same as `clearMarksArrows`, but only in one group. Without `type`, `'persistent'` **is** included. |
 | `clearDragTrails()` | Removes the drag trail circle. |
 | `clearHsLastMove()` | Removes the highlight of the last move (green squares). |
 | `clearHistory()` | Clears the internal move history (does not affect the board position). |
@@ -772,6 +1034,18 @@ import * as ChessTypes from '@0dexz0/simple-chess-board/types'
 /** @type {ChessTypes.Pos} */
 const toPos = "e4"
 ```
+
+Other types related to marks:
+
+| Type | Description |
+|------|-------------|
+| `MarkType` | `'normal' \| 'shift' \| 'ctrl' \| 'alt' \| 'persistent'` |
+| `MarkStyle` | `{ color?, opacity?, typeStyle? }` |
+| `ArrowStyle` | `MarkStyle & { width? }` |
+| `MarkGroupMode` | `'replace' \| 'overlap'` |
+| `MarkGroupOptions` | `{ layer? }` |
+| `MarkGroupConfig` | `MarkGroupMode \| (MarkGroupOptions & { mode })`. One entry of `markGroups`. |
+| `MarkGroupsConfig` | `Record<string, MarkGroupConfig>`. The type of the `markGroups` option. |
 
 <br>
 
@@ -870,8 +1144,8 @@ Below are short examples showing how to integrate `SimpleChessBoard` into some c
 ### Example 1: Local Two-Player (Human vs Human)
 
 ```js
-import { SimpleChessBoard } from '0dexz0/simple-chess-board'
-import { switchPlayerColor } from '0dexz0/simple-chess-board/helpers'
+import { SimpleChessBoard } from '@0dexz0/simple-chess-board'
+import { switchPlayerColor } from '@0dexz0/simple-chess-board/helpers'
 
 const board = new SimpleChessBoard({
     container: document.getElementById('board'),
@@ -1064,6 +1338,6 @@ board.on('move:end', ({ move }) => {
 - Found a bug?
 - Have an idea or suggestion?
 
-Feel free to open an [issue](https://github.com/0dexz0/simple-chess-board/issues) or submit a pull request.
+Feel free to open an [issue](https://github.com/0Dexz0/SimpleChessBoard/issues) or submit a pull request.
 
 **All contributions are welcome!**
