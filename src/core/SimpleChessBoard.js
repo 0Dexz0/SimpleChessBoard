@@ -16,6 +16,14 @@ import * as Types from '../types/SimpleChessBoard.types'
 
 import { piecesPath as defaultPiecesPath } from '../assets'
 
+const SVG_NS = 'http://www.w3.org/2000/svg'
+const MARK_TYPES = ['normal', 'shift', 'ctrl', 'alt', 'persistent']
+const MARK_GROUP_MODES = ['replace', 'overlap']
+
+// Arrow width multiplier (style.width). Above this the head of the shortest arrow
+// (adjacent squares in a straight line) would eat the whole shaft, so it is clamped.
+const ARROW_MAX_WIDTH = 1.5
+
 
 export class SimpleChessBoard {
 
@@ -66,6 +74,14 @@ export class SimpleChessBoard {
     #style
     set style(value) { this.#style = initReactiveStyles(this.svg, initStyle(value)) }
     get style() { return this.#style }
+    //#endregion
+
+    //#region Marks: private state
+    /** @type {Record<'arrows' | 'squares', Map<string, { name: string, mode: Types.MarkGroupMode, layer: number, element: SVGGElement }>>} */
+    #markGroups = { arrows: new Map(), squares: new Map() }
+
+    /** Marks without a group: always layer 0 (above every group) and mode 'replace'. */
+    #defaultMarkGroups = { arrows: null, squares: null }
     //#endregion
 
     //#region Listeners Controll
@@ -128,10 +144,13 @@ export class SimpleChessBoard {
         interactivity = {},
         style = {},
 
+        markGroups = {},
+
         $listeners = {}
     }) {
         this.#createBoardSVG(container, piecesPath)
         this.#cacheDOM()
+        this.#initMarkGroups(markGroups)
 
         this.#initConfig(position, playerColor, orientation, piecesPath, interactivity, style)
 
@@ -160,13 +179,7 @@ export class SimpleChessBoard {
                 ${["hs-selected-piece", "hs-last-move", "hs-check-king"]
                 .map(g => `<g class="${g}"></g>`).join("")}
 
-                <g class="marks-squares">
-                    <g class="normal"></g>
-                    <g class="shift"></g>
-                    <g class="ctrl"></g>
-                    <g class="alt"></g>
-                    <g class="persistent"></g>
-                </g>
+                <g class="marks-squares"></g>
 
                 <g class="pieces"></g>
 
@@ -215,13 +228,7 @@ export class SimpleChessBoard {
                     </g>
                 </g>
 
-                <g class="marks-arrows">
-                    <g class="normal"></g>
-                    <g class="shift"></g>
-                    <g class="ctrl"></g>
-                    <g class="alt"></g>
-                    <g class="persistent"></g>
-                </g>
+                <g class="marks-arrows"></g>
 
                 <g class="promotion-options">
                     <g class="white">
@@ -270,6 +277,46 @@ export class SimpleChessBoard {
             dragTrails: svg.querySelector('.drag-trails'),
         }
         this.g.dragTrailCircle = this.g.dragTrails.querySelector('.circle')
+    }
+
+    /** @param {Types.MarkGroupsConfig} [markGroups] */
+    #initMarkGroups(markGroups) {
+        for (const kind of /** @type {const} */ (['arrows', 'squares'])) {
+            const element = this.#createMarkGroupElement()
+            element.dataset.layer = '0'
+            this.#markContainer(kind).append(element)
+
+            this.#defaultMarkGroups[kind] = { name: null, mode: 'replace', layer: 0, element }
+        }
+
+        this.#createMarkGroupsFromConfig(markGroups)
+    }
+
+    /**
+     * Creates the groups declared in the `markGroups` option of the constructor.
+     * Each entry is `name: mode` or `name: { mode, layer? }` and creates a group with that name
+     * for arrows AND another one for squares (same mode and layer).
+     * Entries are processed in order, so without `layer` the first one ends up on top.
+     * An invalid entry warns once and is skipped; the rest are still created.
+     * @param {Types.MarkGroupsConfig} [markGroups]
+     */
+    #createMarkGroupsFromConfig(markGroups) {
+        if (markGroups === null || markGroups === undefined) return
+
+        if (typeof markGroups !== 'object' || Array.isArray(markGroups)) {
+            this.#warn('"markGroups" must be an object like { name: mode } or { name: { mode, layer } }.')
+            return
+        }
+
+        for (const [name, config] of Object.entries(markGroups)) {
+            const { mode, layer } = typeof config === 'string' ? { mode: config } : (config ?? {})
+
+            // Both kinds share name, mode and layer, so if arrows are valid squares are too.
+            // Creating squares only after arrows succeeded avoids a duplicated warning.
+            if (this.createGroupMarkArrows(name, mode, { layer })) {
+                this.createGroupMarkSquares(name, mode, { layer })
+            }
+        }
     }
 
     #initConfig(position, playerColor, orientation, piecesPath, interactivity, style) {
@@ -642,12 +689,28 @@ export class SimpleChessBoard {
         else if (e.ctrlKey) type = 'ctrl'
         else if (e.shiftKey) type = 'shift'
 
-        if (SimpleChessBoard.areCoordsEqual(fromCoords, toCoords)) {
-            marks.squares && this.renderMarkSquare(type, fromCoords)
-        } else {
-            marks.arrows && this.renderMarkArrow(type, fromCoords, toCoords)
+        const isSquare = SimpleChessBoard.areCoordsEqual(fromCoords, toCoords)
+        if (isSquare ? !marks.squares : !marks.arrows) return
+
+        const kind = isSquare ? 'squares' : 'arrows'
+        const key = isSquare
+            ? `${fromCoords.x},${fromCoords.y}`
+            : `${fromCoords.x},${fromCoords.y},${toCoords.x},${toCoords.y}`
+
+        // Toggle (right click only): drawing the same mark again removes it.
+        // Only 'replace' marks take part; marks of 'overlap' groups are never touched.
+        const existing = this.#findReplaceMarks(kind, type, key)
+        if (existing.length) {
+            existing.forEach(mark => mark.remove())
+            return
         }
 
+        // Drawn without group: layer 0, above every group
+        if (isSquare) {
+            this.renderMarkSquare(type, fromCoords)
+        } else {
+            this.renderMarkArrow(type, fromCoords, { x: toCoords.x, y: toCoords.y })
+        }
     }
     //#endregion
 
@@ -681,104 +744,6 @@ export class SimpleChessBoard {
         rect.addEventListener('animationend', () => {
             rect.remove()
         }, { once: true })
-    }
-
-    /** @type {Types.RenderMarkSquare} */
-    renderMarkSquare(type, pos, options = { typeStyle: '', color: '', opacity: '' }) {
-        const { x, y } = this.normalizeToCoords(pos)
-        const coordsKey = `${x},${y}`
-
-        const { color, opacity, typeStyle } = options
-        const targetGroup = this.g.marksSquares.querySelector(`.${type}`)
-        if (!targetGroup) return
-
-        const existingMark = targetGroup.querySelector(`[data-coords="${coordsKey}"]`)
-
-        if (existingMark) {
-            existingMark.remove()
-            return
-        }
-
-        const style = (color || opacity !== undefined || typeStyle)
-            ? `
-                class="${typeStyle}"
-                style="
-                ${color ? `fill:${color};` : ''}
-                ${opacity !== undefined ? `opacity:${opacity};` : ''}
-            "`
-            : ''
-
-        targetGroup.insertAdjacentHTML(
-            'beforeend',
-            `<rect x="${x}" y="${y}" data-coords="${coordsKey}" ${style}/>`
-        )
-    }
-
-    /** @type {Types.RenderMarkArrow} */
-    renderMarkArrow(type, from, to, options = { typeStyle: '', color: '', opacity: '' }) {
-        const { x: x1, y: y1 } = this.normalizeToCoords(from)
-        const { x: x2, y: y2 } = this.normalizeToCoords(to)
-        const coordsKey = `${x1},${y1},${x2},${y2}`
-
-        const targetGroup = this.g.marksArrows.querySelector(`.${type}`)
-        if (!targetGroup) return
-
-        const existingMark = targetGroup.querySelector(`[data-coords="${coordsKey}"]`)
-
-        if (existingMark) {
-            existingMark.remove()
-            return
-        }
-
-        const sx = x1 + 0.5
-        const sy = y1 + 0.5
-        const ex = x2 + 0.5
-        const ey = y2 + 0.5
-
-        const dx = ex - sx
-        const dy = ey - sy
-        const dist = Math.hypot(dx, dy)
-        if (dist === 0) return
-
-        const ux = dx / dist
-        const uy = dy / dist
-
-        const startOffset = 0.35
-        const baseOffset = 0.35
-        const halfShaft = 0.1
-        const halfTip = 0.25
-
-        const startX = sx + ux * startOffset
-        const startY = sy + uy * startOffset
-        const baseX = ex - ux * baseOffset
-        const baseY = ey - uy * baseOffset
-
-        const px = -uy
-        const py = ux
-
-        const pathD =
-            `M${startX + px * halfShaft} ${startY + py * halfShaft} ` +
-            `L${baseX + px * halfShaft} ${baseY + py * halfShaft} ` +
-            `L${baseX + px * halfTip} ${baseY + py * halfTip} ` +
-            `L${ex} ${ey} ` +
-            `L${baseX - px * halfTip} ${baseY - py * halfTip} ` +
-            `L${baseX - px * halfShaft} ${baseY - py * halfShaft} ` +
-            `L${startX - px * halfShaft} ${startY - py * halfShaft} Z`
-
-        const { color, opacity, typeStyle } = options
-        const style = (color || opacity !== undefined || typeStyle)
-            ? `
-                class="${typeStyle}"
-                style="
-                ${color ? `fill:${color};` : ''}
-                ${opacity !== undefined ? `opacity:${opacity};` : ''}
-            "`
-            : ''
-
-        targetGroup.insertAdjacentHTML(
-            'beforeend',
-            `<path d="${pathD}" data-coords="${coordsKey}" ${style}/>`
-        )
     }
 
     #renderPieceLegalMoves(pos) {
@@ -846,16 +811,6 @@ export class SimpleChessBoard {
         this.clearMarksArrows(type)
     }
 
-    /** @type {Types.ClearMarkSquares} */
-    clearMarksSquares(type, pos) {
-        this.#clearMarksGroup("square", this.g.marksSquares, type, pos)
-    }
-
-    /** @type {Types.ClearMarkArrows} */
-    clearMarksArrows(type, from, to) {
-        this.#clearMarksGroup("arrow", this.g.marksArrows, type, from, to)
-    }
-
     clearDragTrails() {
         this.g.dragTrailCircle.innerHTML = ''
         this.#selectedPiece.drag.lastCoords = null
@@ -903,49 +858,427 @@ export class SimpleChessBoard {
         this.g.hsSelectedPiece.innerHTML = ''
     }
 
-    #clearMarksGroup(markOption, container, type, from, to) {
+    //#endregion
 
-        const getKey = () => {
-            if (!from) return null
+    //#endregion
 
-            if (markOption === "square") {
-                const { x, y } = this.normalizeToCoords(from)
-                return `${x},${y}`
-            }
+    //#region Marks
 
-            if (markOption === "arrow") {
-                from = this.normalizeToCoords(from)
-                to = this.normalizeToCoords(to)
+    //#region Marks: Groups [Public]
+    /**
+     * Creates a group of arrow marks. The group is an axis next to the mark type:
+     * - 'replace': a new mark replaces the 'replace' marks with the same type and coords.
+     * - 'overlap': its marks stack, never replacing nor being replaced.
+     * `options.layer` (integer >= 1): 1 is above every group, 2 below 1, and so on.
+     * Without layer the group goes below all the existing ones. Marks without group are always above (layer 0).
+     * Returns true if the group was created.
+     * @type {Types.CreateGroupMarks}
+     */
+    createGroupMarkArrows(name, mode, options = null) {
+        return this.#createMarkGroup('arrows', name, mode, options?.layer)
+    }
 
-                return `${from.x},${from.y},${to.x},${to.y}`
-            }
+    /**
+     * Same as createGroupMarkArrows, for squares (arrows and squares have independent groups and layers).
+     * @type {Types.CreateGroupMarks}
+     */
+    createGroupMarkSquares(name, mode, options = null) {
+        return this.#createMarkGroup('squares', name, mode, options?.layer)
+    }
+
+    /**
+     * Removes the group together with all its marks. Returns false if it does not exist.
+     * @type {Types.DeleteGroupMarks}
+     */
+    deleteGroupMarkArrows(name) {
+        return this.#deleteMarkGroup('arrows', name)
+    }
+
+    /** @type {Types.DeleteGroupMarks} */
+    deleteGroupMarkSquares(name) {
+        return this.#deleteMarkGroup('squares', name)
+    }
+    //#endregion
+
+    //#region Marks: Render [Public]
+    /**
+     * Always draws (it does not toggle) and returns the reference of the new arrow,
+     * or null if nothing was drawn (invalid input, unknown group, from === to).
+     *
+     * `style.width` is a multiplier of the arrow thickness (1 = default, 1.2 = x1.2, 0.8 = x0.8).
+     * It only thickens the arrow: start and tip stay on the same spot, and the head grows
+     * backwards from the tip. Values above the maximum (1.5) use the maximum; an invalid
+     * value (not a number, NaN, <= 0) warns and uses 1.
+     * @type {Types.RenderMarkArrow}
+     */
+    renderMarkArrow(type, from, to, style = null, group = null) {
+        if (!MARK_TYPES.includes(type)) {
+            this.#warn(`Invalid mark type "${type}".`)
+            return null
         }
 
-        const key = getKey()
+        const entry = this.#resolveMarkGroup('arrows', group)
+        if (!entry) {
+            this.#warn(`Arrow group "${group}" does not exist.`)
+            return null
+        }
 
-        if (type) {
-            const group = container.querySelector(`.${type}`)
-            if (!group) return
+        const a = this.normalizeToCoords(from)
+        const b = this.normalizeToCoords(to)
+        if (!this.#isValidMarkCoords(a) || !this.#isValidMarkCoords(b)) {
+            this.#warn('Invalid arrow position.', { from, to })
+            return null
+        }
+        if (SimpleChessBoard.areCoordsEqual(a, b)) return null
 
-            if (!key) {
-                group.innerHTML = ''
-            } else {
-                const el = group.querySelector(`[data-coords="${key}"]`)
-                el && el.remove()
-            }
+        const key = `${a.x},${a.y},${b.x},${b.y}`
+
+        if (entry.mode === 'replace') {
+            this.#findReplaceMarks('arrows', type, key).forEach(mark => mark.remove())
+        }
+
+        const path = document.createElementNS(SVG_NS, 'path')
+        path.setAttribute('d', this.#arrowPath(a.x, a.y, b.x, b.y, this.#resolveArrowWidth(style?.width)))
+
+        return this.#mountMark(entry, type, path, key, style)
+    }
+
+    /**
+     * Always draws (it does not toggle) and returns the reference of the new square,
+     * or null if nothing was drawn (invalid input, unknown group).
+     * @type {Types.RenderMarkSquare}
+     */
+    renderMarkSquare(type, pos, style = null, group = null) {
+        if (!MARK_TYPES.includes(type)) {
+            this.#warn(`Invalid mark type "${type}".`)
+            return null
+        }
+
+        const entry = this.#resolveMarkGroup('squares', group)
+        if (!entry) {
+            this.#warn(`Square group "${group}" does not exist.`)
+            return null
+        }
+
+        const { x, y } = this.normalizeToCoords(pos) ?? {}
+        if (!this.#isValidMarkCoords({ x, y })) {
+            this.#warn('Invalid square position.', { pos })
+            return null
+        }
+
+        const key = `${x},${y}`
+
+        if (entry.mode === 'replace') {
+            this.#findReplaceMarks('squares', type, key).forEach(mark => mark.remove())
+        }
+
+        const rect = document.createElementNS(SVG_NS, 'rect')
+        rect.setAttribute('x', String(x))
+        rect.setAttribute('y', String(y))
+
+        return this.#mountMark(entry, type, rect, key, style)
+    }
+    //#endregion
+
+    //#region Marks: Remove / Clear [Public]
+    /**
+     * Removes ONE specific mark (the reference returned by renderMark*).
+     * Returns false if it is not a live mark of this board.
+     * @type {Types.RemoveMark}
+     */
+    removeMark(mark) {
+        if (!(mark instanceof SVGElement) || !mark.dataset.coords) return false
+
+        const owned = this.g.marksArrows.contains(mark) || this.g.marksSquares.contains(mark)
+        if (!owned) return false
+
+        mark.remove()
+        return true
+    }
+
+    /**
+     * Clears arrows of ALL groups. Without `type`, `persistent` is skipped.
+     * from + to: that arrow. Only from: every arrow leaving `from`. Nothing: every arrow.
+     * @type {Types.ClearMarkArrows}
+     */
+    clearMarksArrows(type, from, to) {
+        const filter = this.#coordsFilter('arrows', from, to)
+        if (filter === undefined) return
+
+        this.#clearMarksIn('arrows', this.#markGroupEntries('arrows'), type, filter, false)
+    }
+
+    /**
+     * Clears squares of ALL groups. Without `type`, `persistent` is skipped.
+     * @type {Types.ClearMarkSquares}
+     */
+    clearMarksSquares(type, pos) {
+        const filter = this.#coordsFilter('squares', pos)
+        if (filter === undefined) return
+
+        this.#clearMarksIn('squares', this.#markGroupEntries('squares'), type, filter, false)
+    }
+
+    /**
+     * Clears arrows of ONE group. Without `type`, `persistent` IS included.
+     * @type {Types.ClearGroupMarkArrows}
+     */
+    clearGroupMarkArrows(group, type, from, to) {
+        const entry = this.#markGroups.arrows.get(group)
+        if (!entry) {
+            this.#warn(`Arrow group "${group}" does not exist.`)
             return
         }
 
-        for (const group of container.children) {
-            if (group.classList.contains('persistent')) continue
+        const filter = this.#coordsFilter('arrows', from, to)
+        if (filter === undefined) return
 
-            if (!key) {
-                group.innerHTML = ''
-            } else {
-                const el = group.querySelector(`[data-coords="${key}"]`)
-                el && el.remove()
+        this.#clearMarksIn('arrows', [entry], type, filter, true)
+    }
+
+    /**
+     * Clears squares of ONE group. Without `type`, `persistent` IS included.
+     * @type {Types.ClearGroupMarkSquares}
+     */
+    clearGroupMarkSquares(group, type, pos) {
+        const entry = this.#markGroups.squares.get(group)
+        if (!entry) {
+            this.#warn(`Square group "${group}" does not exist.`)
+            return
+        }
+
+        const filter = this.#coordsFilter('squares', pos)
+        if (filter === undefined) return
+
+        this.#clearMarksIn('squares', [entry], type, filter, true)
+    }
+    //#endregion
+
+    //#region Marks: Internals
+    #warn(message, ...extra) {
+        console.warn(`[SimpleChessBoard] ${message}`, ...extra)
+    }
+
+    /** @param {'arrows' | 'squares'} kind */
+    #markContainer(kind) {
+        return kind === 'arrows' ? this.g.marksArrows : this.g.marksSquares
+    }
+
+    /** Default group first, then the created ones. */
+    #markGroupEntries(kind) {
+        return [this.#defaultMarkGroups[kind], ...this.#markGroups[kind].values()]
+    }
+
+    /** null/undefined -> default group. Unknown name -> null. */
+    #resolveMarkGroup(kind, name) {
+        if (name === null || name === undefined) return this.#defaultMarkGroups[kind]
+        return this.#markGroups[kind].get(name) ?? null
+    }
+
+    /** <g class="mark-group"> containing one <g> per mark type (normal ... persistent, in that DOM order). */
+    #createMarkGroupElement() {
+        const group = document.createElementNS(SVG_NS, 'g')
+        group.classList.add('mark-group')
+
+        for (const type of MARK_TYPES) {
+            const layer = document.createElementNS(SVG_NS, 'g')
+            layer.classList.add(type)
+            group.append(layer)
+        }
+
+        return group
+    }
+
+    #createMarkGroup(kind, name, mode, layer) {
+        const groups = this.#markGroups[kind]
+
+        if (typeof name !== 'string' || !name.trim()) {
+            this.#warn('The group name must be a non-empty string.')
+            return false
+        }
+        if (groups.has(name)) {
+            this.#warn(`Group "${name}" already exists.`)
+            return false
+        }
+        if (!MARK_GROUP_MODES.includes(mode)) {
+            this.#warn(`Invalid group mode "${mode}". Use 'replace' or 'overlap'.`)
+            return false
+        }
+
+        if (layer === undefined || layer === null) {
+            // No layer: below every existing group
+            layer = Math.max(0, ...Array.from(groups.values(), g => g.layer)) + 1
+        } else if (!Number.isInteger(layer) || layer < 1) {
+            this.#warn(`Invalid layer "${layer}". It must be an integer >= 1.`)
+            return false
+        }
+
+        const element = this.#createMarkGroupElement()
+        element.dataset.group = name
+        element.dataset.layer = String(layer)
+
+        // DOM order is bottom -> top, so it goes by descending layer number (default group, layer 0, last).
+        // Inserting BEFORE the first element with layer <= ours keeps the oldest group on top when layers tie.
+        const container = this.#markContainer(kind)
+        const reference = [...container.children].find(el => Number(el.dataset.layer) <= layer)
+        container.insertBefore(element, reference ?? null)
+
+        groups.set(name, { name, mode, layer, element })
+        return true
+    }
+
+    #deleteMarkGroup(kind, name) {
+        const entry = this.#markGroups[kind].get(name)
+        if (!entry) return false
+
+        entry.element.remove()
+        this.#markGroups[kind].delete(name)
+        return true
+    }
+
+    /**
+     * The <g> layers of a group that match `type`.
+     * Without `type`: all of them, or all except `persistent` when includePersistent is false.
+     */
+    #markTypeLayers(entry, type, includePersistent = true) {
+        const layers = [...entry.element.children]
+
+        if (type) return layers.filter(layer => layer.classList.contains(type))
+
+        return includePersistent
+            ? layers
+            : layers.filter(layer => !layer.classList.contains('persistent'))
+    }
+
+    #isValidMarkCoords(coords) {
+        return Boolean(coords)
+            && Number.isInteger(coords.x)
+            && Number.isInteger(coords.y)
+            && !SimpleChessBoard.isCoordsOutOfBounds(coords)
+    }
+
+    /**
+     * Builds the CSS selector that filters marks by data-coords.
+     * @returns {string | undefined}  '' = no filter, undefined = invalid input (do nothing)
+     */
+    #coordsFilter(kind, from, to) {
+        if (from === null || from === undefined) {
+            if (to === null || to === undefined) return ''
+            this.#warn('"to" cannot be used without "from".')
+            return undefined
+        }
+
+        const a = this.normalizeToCoords(from)
+        if (!this.#isValidMarkCoords(a)) {
+            this.#warn('Invalid position.', from)
+            return undefined
+        }
+
+        if (kind === 'squares') return `[data-coords="${a.x},${a.y}"]`
+
+        // Every arrow leaving "from"
+        if (to === null || to === undefined) return `[data-coords^="${a.x},${a.y},"]`
+
+        const b = this.normalizeToCoords(to)
+        if (!this.#isValidMarkCoords(b)) {
+            this.#warn('Invalid position.', to)
+            return undefined
+        }
+
+        return `[data-coords="${a.x},${a.y},${b.x},${b.y}"]`
+    }
+
+    /** Marks with the same type and coords in ANY 'replace' group (default included). */
+    #findReplaceMarks(kind, type, key) {
+        const marks = []
+
+        for (const entry of this.#markGroupEntries(kind)) {
+            if (entry.mode !== 'replace') continue
+
+            for (const layer of this.#markTypeLayers(entry, type)) {
+                marks.push(...layer.querySelectorAll(`[data-coords="${key}"]`))
             }
         }
+
+        return marks
+    }
+
+    #clearMarksIn(kind, entries, type, filter, includePersistent) {
+        if (type !== null && type !== undefined && !MARK_TYPES.includes(type)) {
+            this.#warn(`Invalid mark type "${type}".`)
+            return
+        }
+
+        for (const entry of entries) {
+            for (const layer of this.#markTypeLayers(entry, type, includePersistent)) {
+                if (filter) layer.querySelectorAll(filter).forEach(mark => mark.remove())
+                else layer.replaceChildren()
+            }
+        }
+    }
+
+    #mountMark(entry, type, mark, key, style) {
+        const { color, opacity, typeStyle } = style ?? {}
+
+        mark.dataset.coords = key
+        if (entry.name !== null) mark.dataset.group = entry.name
+
+        if (typeStyle) mark.classList.add(...String(typeStyle).split(/\s+/).filter(Boolean))
+        if (color) mark.style.fill = color
+        if (opacity !== undefined && opacity !== null && opacity !== '') mark.style.opacity = opacity
+
+        this.#markTypeLayers(entry, type)[0].append(mark)
+        return mark
+    }
+
+    /** @returns {number} multiplier in (0, ARROW_MAX_WIDTH] */
+    #resolveArrowWidth(width) {
+        if (width === undefined || width === null) return 1
+        if (typeof width !== 'number' || Number.isNaN(width) || width <= 0) {
+            this.#warn(`Invalid arrow width "${width}". Using 1.`)
+            return 1
+        }
+        return Math.min(width, ARROW_MAX_WIDTH)
+    }
+
+    /**
+     * Start (0.35 from the origin center) and tip (destination center) never move.
+     * `width` multiplies shaft width, head width and head length, so the head keeps its
+     * shape and grows backwards from the tip, never past it.
+     */
+    #arrowPath(x1, y1, x2, y2, width = 1) {
+        const sx = x1 + 0.5
+        const sy = y1 + 0.5
+        const ex = x2 + 0.5
+        const ey = y2 + 0.5
+
+        const dx = ex - sx
+        const dy = ey - sy
+        const dist = Math.hypot(dx, dy)
+
+        const ux = dx / dist
+        const uy = dy / dist
+
+        const startOffset = 0.35
+        const baseOffset = 0.35 * width
+        const halfShaft = 0.1 * width
+        const halfTip = 0.25 * width
+
+        const startX = sx + ux * startOffset
+        const startY = sy + uy * startOffset
+        const baseX = ex - ux * baseOffset
+        const baseY = ey - uy * baseOffset
+
+        const px = -uy
+        const py = ux
+
+        return `M${startX + px * halfShaft} ${startY + py * halfShaft} ` +
+            `L${baseX + px * halfShaft} ${baseY + py * halfShaft} ` +
+            `L${baseX + px * halfTip} ${baseY + py * halfTip} ` +
+            `L${ex} ${ey} ` +
+            `L${baseX - px * halfTip} ${baseY - py * halfTip} ` +
+            `L${baseX - px * halfShaft} ${baseY - py * halfShaft} ` +
+            `L${startX - px * halfShaft} ${startY - py * halfShaft} Z`
     }
     //#endregion
 
