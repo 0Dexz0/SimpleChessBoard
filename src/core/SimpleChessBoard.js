@@ -1374,6 +1374,7 @@ export class SimpleChessBoard {
 
         const pieces = this.g.pieces
         pieces.innerHTML = ''
+        this.#deadPiecesOrder.length = 0
 
         let x = 0, y = 0
         for (let char of boardFEN) {
